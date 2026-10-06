@@ -1,0 +1,1475 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Almoxarifado — Terra Sol Engenharia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#f0f4f8;--card:#fff;--border:#e2e8f0;--text:#1a202c;--muted:#718096;
+  --accent:#2d6a4f;--accent2:#40916c;--accent3:#52b788;--danger:#e53e3e;
+  --warn:#d69e2e;--ok:#38a169;--blue:#3182ce;--sidebar:#1b4332;--sidebar-text:#d8f3dc;
+  --sidebar-active:#40916c;--header-h:56px;--sidebar-w:220px;
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#0f1117;--card:#1a1d27;--border:#2d3748;--text:#e2e8f0;--muted:#a0aec0;
+    --sidebar:#0d2218;--sidebar-text:#b7e4c7;}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+
+/* ── LOGIN ── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1b4332 0%,#2d6a4f 60%,#40916c 100%)}
+.login-box{background:#fff;border-radius:16px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo h1{font-size:1.4rem;font-weight:800;color:var(--accent);margin-top:8px}
+.login-logo p{font-size:.82rem;color:var(--muted);margin-top:2px}
+.login-box label{display:block;font-size:.82rem;font-weight:600;color:#4a5568;margin-bottom:4px}
+.login-box input{width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:.95rem;outline:none;transition:border .2s}
+.login-box input:focus{border-color:var(--accent)}
+.login-field{margin-bottom:16px}
+.btn-login{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;transition:background .2s}
+.btn-login:hover{background:var(--accent2)}
+.btn-login:disabled{opacity:.6;cursor:default}
+.login-err{color:var(--danger);font-size:.82rem;text-align:center;margin-top:10px;min-height:18px}
+.forgot-link{display:block;text-align:center;margin-top:12px;font-size:.82rem;color:var(--accent);cursor:pointer;text-decoration:underline}
+
+/* ── APP ── */
+#app{display:none;height:100vh;overflow:hidden}
+header{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:var(--sidebar);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+header .brand{font-size:1rem;font-weight:800;color:#fff;flex:1}
+header .brand span{color:var(--accent3);font-size:.75rem;display:block;font-weight:400}
+.user-pill{display:flex;align-items:center;gap:8px;color:var(--sidebar-text);font-size:.82rem}
+.user-pill .avatar{width:30px;height:30px;border-radius:50%;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.85rem;cursor:pointer;transition:background .15s}
+.user-pill .avatar:hover{background:var(--accent3)}
+.btn-logout{background:rgba(255,255,255,.12);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:.8rem}
+.btn-logout:hover{background:rgba(255,255,255,.22)}
+
+#sidebar{position:fixed;top:var(--header-h);left:0;width:var(--sidebar-w);bottom:0;background:var(--sidebar);overflow-y:auto;padding:12px 0;z-index:90}
+.nav-section{padding:8px 16px 4px;font-size:.68rem;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.08em;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;cursor:pointer;color:var(--sidebar-text);font-size:.88rem;transition:background .15s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.07)}
+.nav-item.active{background:rgba(255,255,255,.12);border-left-color:var(--accent3);color:#fff;font-weight:600}
+.nav-item .ni{font-size:1rem;width:18px;text-align:center}
+
+#main{margin-top:var(--header-h);margin-left:var(--sidebar-w);padding:24px;overflow-y:auto;height:calc(100vh - var(--header-h))}
+@media(max-width:700px){
+  #sidebar{transform:translateX(-100%);transition:transform .25s}
+  #sidebar.open{transform:translateX(0)}
+  #main{margin-left:0}
+  .hamburger{display:flex!important}
+}
+.hamburger{display:none;background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer}
+
+/* ── PAGE HEADER ── */
+.page-hdr{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.page-hdr h2{font-size:1.25rem;font-weight:700}
+.page-hdr .badge-cnt{background:var(--accent);color:#fff;font-size:.72rem;padding:2px 8px;border-radius:12px}
+.page-hdr .spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent2)}
+.btn-secondary{background:var(--card);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{background:var(--bg)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+
+/* ── CARDS / GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.stat-card .label{font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.stat-card .value{font-size:2rem;font-weight:800;margin:4px 0;color:var(--accent)}
+.stat-card .sub{font-size:.75rem;color:var(--muted)}
+
+/* ── TABLE ── */
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.table-toolbar{padding:12px 16px;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.search-box{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;flex:1;min-width:160px}
+.search-box input{border:none;background:none;outline:none;font-size:.88rem;color:var(--text);width:100%}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 14px;text-align:left;font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);background:var(--bg)}
+td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:.88rem}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,0,0,.015)}
+.badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.72rem;font-weight:700}
+.badge-ok{background:#c6f6d5;color:#22543d}.badge-warn{background:#fefcbf;color:#744210}
+.badge-danger{background:#fed7d7;color:#742a2a}.badge-blue{background:#bee3f8;color:#2c5282}
+.badge-gray{background:#e2e8f0;color:#4a5568}
+.actions{display:flex;gap:6px}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border-radius:12px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-hdr{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-hdr h3{font-size:1rem;font-weight:700}
+.modal-close{background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);line-height:1}
+.modal-body{padding:20px 24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+.form-row{margin-bottom:14px}
+.form-row label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:4px}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:.88rem;background:var(--bg);color:var(--text);outline:none;transition:border .2s;font-family:inherit}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--accent)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ── STOCK BAR ── */
+.stock-bar{width:100%;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.stock-bar-fill{height:100%;border-radius:3px;transition:width .3s}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;right:24px;z-index:500;display:flex;flex-direction:column;gap:8px}
+.toast-item{background:#1a202c;color:#fff;padding:10px 18px;border-radius:8px;font-size:.85rem;
+  display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.3);animation:slideIn .25s ease}
+.toast-item.ok{border-left:4px solid var(--ok)}.toast-item.err{border-left:4px solid var(--danger)}
+@keyframes slideIn{from{transform:translateX(80px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── MISC ── */
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-state .icon{font-size:2.5rem;margin-bottom:12px}
+.loading{text-align:center;padding:40px;color:var(--muted)}
+.pct-bar{display:flex;align-items:center;gap:8px}
+.pct-bar span{font-size:.75rem;color:var(--muted);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div style="font-size:2.2rem">🏗️</div>
+      <h1>Terra Sol Engenharia</h1>
+      <p>Sistema de Controle de Almoxarifado</p>
+    </div>
+    <div class="login-field">
+      <label>E-mail</label>
+      <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div class="login-field">
+      <label>Senha</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-login" id="btn-login" onclick="fazerLogin()">Entrar</button>
+    <div class="login-err" id="login-err"></div>
+    <a class="forgot-link" onclick="recuperarSenha()">Esqueci minha senha</a>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <div class="brand">Almoxarifado <span id="config-nome-header">Terra Sol Engenharia</span></div>
+    <div class="user-pill">
+      <div class="avatar" id="user-avatar" title="Clique para trocar senha" onclick="abrirTrocarSenha()">A</div>
+      <span id="user-nome">Usuário</span>
+      <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+    </div>
+  </header>
+
+  <nav id="sidebar">
+    <div class="nav-section">Principal</div>
+    <div class="nav-item active" onclick="navTo('dashboard')" data-page="dashboard"><span class="ni">📊</span> Dashboard</div>
+    <div class="nav-section">Estoque</div>
+    <div class="nav-item" onclick="navTo('patrimonio')" data-page="patrimonio"><span class="ni">🏷️</span> Patrimônio</div>
+    <div class="nav-item" onclick="navTo('ferramentas')" data-page="ferramentas"><span class="ni">🔧</span> Ferramentas</div>
+    <div class="nav-item" onclick="navTo('insumos')" data-page="insumos"><span class="ni">📦</span> Insumos</div>
+    <div class="nav-item" onclick="navTo('custodias')" data-page="custodias"><span class="ni">🤝</span> Custódias</div>
+    <div class="nav-section">Operações</div>
+    <div class="nav-item" onclick="navTo('movimentacoes')" data-page="movimentacoes"><span class="ni">↕️</span> Movimentações</div>
+    <div class="nav-item" onclick="navTo('requisicoes')" data-page="requisicoes"><span class="ni">📋</span> Requisições</div>
+    <div class="nav-item" onclick="navTo('checklists')" data-page="checklists"><span class="ni">✅</span> Checklists</div>
+    <div class="nav-section">Relatórios</div>
+    <div class="nav-item" onclick="navTo('relatorio')" data-page="relatorio"><span class="ni">📈</span> Relatório</div>
+    <div class="nav-section" id="nav-admin-section">Admin</div>
+    <div class="nav-item nav-admin" onclick="navTo('obras')" data-page="obras"><span class="ni">🏗️</span> Obras/Setores</div>
+    <div class="nav-item nav-admin" onclick="navTo('usuarios')" data-page="usuarios"><span class="ni">👥</span> Usuários</div>
+    <div class="nav-item nav-admin" onclick="navTo('configuracoes')" data-page="configuracoes"><span class="ni">⚙️</span> Configurações</div>
+  </nav>
+
+  <main id="main"><div class="loading">Carregando...</div></main>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MODAL GENÉRICO -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)fecharModal()">
+  <div class="modal" id="modal">
+    <div class="modal-hdr">
+      <h3 id="modal-titulo">Modal</h3>
+      <button class="modal-close" onclick="fecharModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-corpo"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIGURAÇÃO SUPABASE
+// ══════════════════════════════════════════════
+const SUPA_URL = 'https://xmlfpwzfqmsrbisjqgpo.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtbGZwd3pmcW1zcmJpc2pxZ3BvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MTE3MjQsImV4cCI6MjEwNjI4NzcyNH0.g3E2tfuGH-E8TQPHB77CRzjTiySk0K3utqv0a3wNTZA';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ══════════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════════
+let currentUser = null;
+let currentPerfil = null;
+let currentPage = 'dashboard';
+let configEmpresa = { nome: 'Terra Sol Engenharia', cnpj: '', endereco: '', cidade: '', telefone: '', email: '', texto_rodape: '' };
+
+// ══════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (session) {
+    await carregarUsuario(session.user);
+    mostrarApp();
+  } else {
+    mostrarLogin();
+  }
+});
+
+async function carregarUsuario(authUser) {
+  const { data } = await sb.from('usuarios')
+    .select('id,nome,email,perfil,ativo')
+    .eq('auth_user_id', authUser.id)
+    .single();
+  if (data) {
+    currentUser = data;
+    currentPerfil = data.perfil;
+    document.getElementById('user-nome').textContent = data.nome.split(' ')[0];
+    document.getElementById('user-avatar').textContent = data.nome[0].toUpperCase();
+    const isAdmin = ['ADMINISTRADOR','GESTOR'].includes(currentPerfil);
+    document.querySelectorAll('.nav-admin').forEach(el => el.style.display = isAdmin ? '' : 'none');
+    document.getElementById('nav-admin-section').style.display = isAdmin ? '' : 'none';
+  }
+  await carregarConfig();
+}
+
+async function fazerLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-pass').value;
+  const btn = document.getElementById('btn-login');
+  const err = document.getElementById('login-err');
+  err.textContent = '';
+  if (!email || !senha) { err.textContent = 'Preencha e-mail e senha.'; return; }
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+  const { error } = await sb.auth.signInWithPassword({ email, password: senha });
+  if (error) {
+    err.textContent = error.message.includes('Invalid') ? 'E-mail ou senha incorretos.' : error.message;
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+async function fazerLogout() {
+  await sb.auth.signOut();
+}
+
+async function recuperarSenha() {
+  const email = document.getElementById('login-email').value.trim();
+  if (!email) { document.getElementById('login-err').textContent = 'Digite seu e-mail acima primeiro.'; return; }
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.href });
+  if (!error) {
+    document.getElementById('login-err').style.color = 'var(--ok)';
+    document.getElementById('login-err').textContent = 'Link de recuperação enviado! Verifique seu e-mail.';
+  }
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') fazerLogin();
+});
+
+function mostrarLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+function mostrarApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  navTo('dashboard');
+}
+
+// ══════════════════════════════════════════════
+// TROCAR SENHA
+// ══════════════════════════════════════════════
+function abrirTrocarSenha() {
+  abrirModal('🔑 Trocar Senha', `
+    <div class="form-row"><label>Nova Senha *</label>
+      <input type="password" id="nova-senha" placeholder="Mínimo 8 caracteres"></div>
+    <div class="form-row"><label>Confirmar Nova Senha *</label>
+      <input type="password" id="conf-senha" placeholder="Repita a nova senha"></div>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:4px">A nova senha deve ter pelo menos 8 caracteres.</p>
+  `, `<button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarTrocarSenha()">Salvar Senha</button>`);
+}
+
+window.confirmarTrocarSenha = async function() {
+  const nova = document.getElementById('nova-senha').value;
+  const conf = document.getElementById('conf-senha').value;
+  if (!nova || nova.length < 8) { toast('Senha deve ter pelo menos 8 caracteres.', 'err'); return; }
+  if (nova !== conf) { toast('As senhas não coincidem.', 'err'); return; }
+  const { error } = await sb.auth.updateUser({ password: nova });
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+  toast('Senha alterada com sucesso!');
+  fecharModal();
+};
+
+// ══════════════════════════════════════════════
+// CONFIGURAÇÃO EMPRESA (tabela config_empresa, linha única id=1)
+// ══════════════════════════════════════════════
+async function carregarConfig() {
+  const { data } = await sb.from('config_empresa').select('nome,cnpj,endereco,cidade,telefone,email,texto_rodape').eq('id', 1).single();
+  if (data) {
+    Object.keys(configEmpresa).forEach(k => { if (data[k] !== undefined) configEmpresa[k] = data[k] || ''; });
+    if (configEmpresa.nome) document.getElementById('config-nome-header').textContent = configEmpresa.nome;
+  }
+}
+
+// ══════════════════════════════════════════════
+// NAVEGAÇÃO
+// ══════════════════════════════════════════════
+function navTo(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const navEl = document.querySelector(`[data-page="${page}"]`);
+  if (navEl) navEl.classList.add('active');
+  if (window.innerWidth <= 700) document.getElementById('sidebar').classList.remove('open');
+  renderPage(page);
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+async function renderPage(page) {
+  const main = document.getElementById('main');
+  main.innerHTML = '<div class="loading">⏳ Carregando...</div>';
+  const pages = {
+    dashboard: renderDashboard,
+    patrimonio: renderPatrimonio,
+    ferramentas: renderFerramentas,
+    insumos: renderInsumos,
+    custodias: renderCustodias,
+    movimentacoes: renderMovimentacoes,
+    requisicoes: renderRequisicoes,
+    checklists: renderChecklists,
+    relatorio: renderRelatorio,
+    obras: renderObras,
+    usuarios: renderUsuarios,
+    configuracoes: renderConfiguracoes,
+  };
+  if (pages[page]) await pages[page]();
+}
+
+// ══════════════════════════════════════════════
+// UTILITÁRIOS
+// ══════════════════════════════════════════════
+function toast(msg, tipo = 'ok') {
+  const t = document.getElementById('toast');
+  const el = document.createElement('div');
+  el.className = `toast-item ${tipo}`;
+  el.innerHTML = (tipo === 'ok' ? '✓' : '✕') + ' ' + msg;
+  t.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function abrirModal(titulo, corpo, footer = '') {
+  document.getElementById('modal-titulo').textContent = titulo;
+  document.getElementById('modal-corpo').innerHTML = corpo;
+  document.getElementById('modal-footer').innerHTML = footer;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function fecharModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function fmtData(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('pt-BR');
+}
+
+function fmtQtd(n) {
+  return (n ?? 0).toLocaleString('pt-BR');
+}
+
+function exportCSV(rows, nome) {
+  const bom = '﻿';
+  const sep = ';';
+  const csv = bom + rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g,'""')}"`).join(sep)).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = nome + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+function podeEditar() {
+  return ['ADMINISTRADOR','GESTOR','ALMOXARIFE'].includes(currentPerfil);
+}
+
+// ══════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════
+async function renderDashboard() {
+  const [
+    { count: cPat },
+    { count: cFer },
+    { count: cIns },
+    { count: cCust },
+    { data: insEstoque },
+    { data: reqPend },
+    { data: ultMov }
+  ] = await Promise.all([
+    sb.from('bens_patrimoniais').select('id', { count: 'exact', head: true }).eq('ativo', true),
+    sb.from('itens').select('id', { count: 'exact', head: true }).eq('tipo', 'FERRAMENTA').eq('ativo', true),
+    sb.from('itens').select('id', { count: 'exact', head: true }).eq('tipo', 'INSUMO').eq('ativo', true),
+    sb.from('custodias').select('id', { count: 'exact', head: true }).eq('ativa', true),
+    sb.from('insumos_estoque').select('id,descricao,estoque_minimo,qtd_atual'),
+    sb.from('requisicoes_material').select('id,codigo,solicitante_nome,obra_nome,criado_em').eq('status','pendente').order('criado_em',{ascending:false}).limit(5),
+    sb.from('movimentacoes')
+      .select('id,tipo,status,criado_em,criado_por:usuarios!usuario_criador_id(nome)')
+      .eq('status','CONFIRMADA').order('criado_em',{ascending:false}).limit(8),
+  ]);
+
+  const baixoEstoque = (insEstoque || []).filter(i => i.estoque_minimo > 0 && i.qtd_atual <= i.estoque_minimo);
+
+  document.getElementById('main').innerHTML = `
+    <div class="page-hdr"><h2>📊 Dashboard</h2><span class="badge-cnt badge">${new Date().toLocaleDateString('pt-BR')}</span></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">Patrimônios</div><div class="value">${fmtQtd(cPat)}</div><div class="sub">bens ativos</div></div>
+      <div class="stat-card"><div class="label">Ferramentas</div><div class="value">${fmtQtd(cFer)}</div><div class="sub">tipos cadastrados</div></div>
+      <div class="stat-card"><div class="label">Insumos</div><div class="value">${fmtQtd(cIns)}</div><div class="sub">tipos cadastrados</div></div>
+      <div class="stat-card"><div class="label">Custódias Ativas</div><div class="value">${fmtQtd(cCust)}</div><div class="sub">itens em uso</div></div>
+      <div class="stat-card"><div class="label">Req. Pendentes</div><div class="value" style="color:var(--warn)">${fmtQtd(reqPend?.length)}</div><div class="sub">aguardando aprovação</div></div>
+      <div class="stat-card"><div class="label">Alertas Estoque</div><div class="value" style="color:var(--danger)">${fmtQtd(baixoEstoque.length)}</div><div class="sub">abaixo do mínimo</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+      <div class="table-wrap">
+        <div class="table-toolbar"><strong>📋 Req. Pendentes</strong></div>
+        <table><thead><tr><th>Código</th><th>Solicitante</th><th>Data</th></tr></thead><tbody>
+          ${(reqPend||[]).length ? reqPend.map(r=>`<tr><td><b>${r.codigo}</b></td><td>${r.solicitante_nome}</td><td>${fmtData(r.criado_em)}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--muted)">Nenhuma pendente</td></tr>'}
+        </tbody></table>
+      </div>
+      <div class="table-wrap">
+        <div class="table-toolbar"><strong>⚠️ Estoque Baixo</strong></div>
+        <table><thead><tr><th>Item</th><th>Atual</th><th>Mínimo</th></tr></thead><tbody>
+          ${baixoEstoque.length ? baixoEstoque.slice(0,6).map(i=>`<tr><td>${i.descricao}</td><td style="color:var(--danger);font-weight:700">${fmtQtd(i.qtd_atual)}</td><td>${fmtQtd(i.estoque_minimo)}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--ok)">✓ Tudo em ordem</td></tr>'}
+        </tbody></table>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar"><strong>↕️ Últimas Movimentações Confirmadas</strong></div>
+      <table><thead><tr><th>Tipo</th><th>Criado por</th><th>Data</th></tr></thead><tbody>
+        ${(ultMov||[]).length ? ultMov.map(m=>`<tr>
+          <td>${tipoMovLabel(m.tipo)}</td>
+          <td>${m.criado_por?.nome||'—'}</td>
+          <td>${fmtData(m.criado_em)}</td>
+        </tr>`).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--muted)">Nenhuma movimentação</td></tr>'}
+      </tbody></table>
+    </div>
+  `;
+}
+
+function tipoMovLabel(tipo) {
+  const map = {
+    ENTRADA:'Entrada', CONSUMO:'Consumo', ENTREGA_FUNCIONARIO:'Entrega p/ Func.',
+    DEVOLUCAO_FUNCIONARIO:'Devolução Func.', ENVIO_OBRA:'Envio p/ Obra', RETORNO_OBRA:'Retorno Obra',
+    TRANSFERENCIA:'Transferência', SALDO_INICIAL:'Saldo Inicial', AJUSTE_APROVADO:'Ajuste',
+    DESCARTE_APROVADO:'Descarte', ESTORNO:'Estorno', ENVIO_MANUTENCAO:'Envio Manutenção',
+    RETORNO_MANUTENCAO:'Retorno Manutenção'
+  };
+  return map[tipo] || tipo;
+}
+
+// ══════════════════════════════════════════════
+// PATRIMÔNIO
+// ══════════════════════════════════════════════
+async function renderPatrimonio() {
+  const { data, error } = await sb.from('bens_patrimoniais')
+    .select('id,numero_patrimonio,numero_serie,marca,modelo,situacao,conservacao,historico_legado,ativo,item:itens!item_id(codigo,nome),responsavel:funcionarios!responsavel_id(nome),local:locais!local_atual_id(nome)')
+    .order('numero_patrimonio', { ascending: true });
+  if (error) { document.getElementById('main').innerHTML = `<p style="color:red">Erro: ${error.message}</p>`; return; }
+
+  const editar = podeEditar();
+  document.getElementById('main').innerHTML = `
+    <div class="page-hdr">
+      <h2>🏷️ Patrimônio</h2><span class="badge-cnt badge">${(data||[]).length}</span>
+      <div class="spacer"></div>
+      ${editar ? `<button class="btn btn-secondary btn-sm" onclick="exportarPatrimonio()">⬇ CSV</button>` : ''}
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="search-box">🔍 <input id="search-pat" placeholder="Buscar..." oninput="filtrarTabela('tbPat',this.value,[0,1,2,3])"></div>
+      </div>
+      <table id="tbPat"><thead><tr>
+        <th>Nº Pat.</th><th>Item</th><th>Marca/Modelo</th><th>Responsável</th><th>Local</th><th>Situação</th>
+      </tr></thead><tbody>
+      ${(data||[]).map(b=>{
+        const nome = b.item?.nome || (b.historico_legado ? b.historico_legado.split('|')[0].trim() : '') || '(sem descrição)';
+        const codigo = b.item?.codigo || '';
+        return `<tr>
+          <td><b>${b.numero_patrimonio||'—'}</b></td>
+          <td>${nome}<br><small style="color:var(--muted)">${codigo}</small></td>
+          <td>${[b.marca,b.modelo].filter(Boolean).join(' ')||'—'}</td>
+          <td>${b.responsavel?.nome||'—'}</td>
+          <td>${b.local?.nome||'—'}</td>
+          <td><span class="badge ${b.situacao==='ATIVO'?'badge-ok':b.situacao==='MANUTENCAO'?'badge-warn':'badge-gray'}">${b.situacao||'—'}</span></td>
+        </tr>`;
+      }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Nenhum patrimônio cadastrado</td></tr>'}
+      </tbody></table>
+    </div>`;
+  window._patrimonioData = data;
+}
+
+window.exportarPatrimonio = function() {
+  const d = window._patrimonioData || [];
+  exportCSV([
+    ['Nº Patrimônio','Código','Nome','Marca','Modelo','Responsável','Local','Situação'],
+    ...d.map(b=>{
+      const nome = b.item?.nome || (b.historico_legado ? b.historico_legado.split('|')[0].trim() : '') || '';
+      return [b.numero_patrimonio, b.item?.codigo||'', nome, b.marca, b.modelo, b.responsavel?.nome, b.local?.nome, b.situacao];
+    })
+  ], 'patrimonio');
+};
+
+// ══════════════════════════════════════════════
+// FERRAMENTAS (usa itens com tipo=FERRAMENTA)
+// ══════════════════════════════════════════════
+async function renderFerramentas() {
+  const { data } = await sb.from('itens')
+    .select('id,codigo,nome,unidade,categoria,descricao,ativo,estoque_minimo')
+    .eq('tipo','FERRAMENTA')
+    .order('nome');
+  const editar = podeEditar();
+  document.getElementById('main').innerHTML = `
+    <div class="page-hdr">
+      <h2>🔧 Ferramentas</h2><span class="badge-cnt badge">${(data||[]).length}</span>
+      <div class="spacer"></div>
+      ${editar ? `<button class="btn btn-primary" onclick="novaFerramenta()">+ Nova</button>` : ''}
+      <button class="btn btn-secondary btn-sm" onclick="exportarFerramentas()">⬇ CSV</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="search-box">🔍 <input placeholder="Buscar..." oninput="filtrarTabela('tbFer',this.value,[0,1,2])"></div>
+      </div>
+      <table id="tbFer"><thead><tr>
+        <th>Código</th><th>Nome</th><th>Categoria</th><th>Unidade</th><th>Estoque Mín.</th><th>Status</th>${editar?'<th></th>':''}
+      </tr></thead><tbody>
+      ${(data||[]).map(f=>`<tr>
+        <td><b>${f.codigo||'—'}</b></td>
+        <td>${f.nome}</td>
+        <td>${f.categoria||'—'}</td>
+        <td>${f.unidade||'un'}</td>
+        <td>${fmtQtd(f.estoque_minimo)}</td>
+        <td><span class="badge ${f.ativo?'badge-ok':'badge-gray'}">${f.ativo?'Ativo':'Inativo'}</span></td>
+        ${editar?`<td><div class="actions">
+          <button class="btn btn-secondary btn-sm" onclick='editarFerramenta(${JSON.stringify(f).replace(/'/g,"&#39;")})'>✏️</button>
+        </div></td>`:''}
+      </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px">Nenhuma ferramenta cadastrada</td></tr>'}
+      </tbody></table>
+    </div>`;
+  window._ferData = data;
+}
+
+window.novaFerramenta = function() {
+  abrirModal('Nova Ferramenta', formFerramenta({}), `
+    <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="salvarFerramenta()">Salvar</button>`);
+};
+
+window.editarFerramenta = function(f) {
+  abrirModal('Editar Ferramenta', formFerramenta(f), `
+    <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="salvarFerramenta('${f.id}')">Salvar</button>`);
+};
+
+function formFerramenta(f={}) {
+  return `
+    <input type="hidden" id="fer-id" value="${f.id||''}">
+    <div class="form-grid">
+      <div class="form-row"><label>Código</label><input id="fer-codigo" value="${f.codigo||''}" placeholder="FER-001"></div>
+      <div class="form-row"><label>Unidade</label><input id="fer-unidade" value="${f.unidade||'un'}"></div>
+    </div>
+    <div class="form-row"><label>Nome *</label><input id="fer-nome" value="${f.nome||''}" placeholder="Nome da ferramenta"></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Categoria</label><input id="fer-cat" value="${f.categoria||''}"></div>
+      <div class="form-row"><label>Estoque Mínimo</label><input type="number" id="fer-min" value="${f.estoque_minimo||0}" min="0"></div>
+    </div>
+    <div class="form-row"><label>Descrição</label><textarea id="fer-desc" rows="2">${f.descricao||''}</textarea></div>`;
+}
+
+window.salvarFerramenta = async function(id) {
+  const nome = document.getElementById('fer-nome').value.trim();
+  if (!nome) { toast('Nome obrigatório', 'err'); return; }
+  const payload = {
+    nome,
+    tipo: 'FERRAMENTA',
+    codigo: document.getElementById('fer-codigo').value.trim()||null,
+    unidade: document.getElementById('fer-unidade').value.trim()||'un',
+    categoria: document.getElementById('fer-cat').value.trim()||null,
+    descricao: document.getElementById('fer-desc').value.trim()||null,
+    estoque_minimo: parseInt(document.getElementById('fer-min').value)||0,
+  };
+  let err;
+  if (id) {
+    ({ error: err } = await sb.from('itens').update(payload).eq('id', id));
+  } else {
+    ({ error: err } = await sb.from('itens').insert(payload));
+  }
+  if (err) { toast('Erro: ' + err.message, 'err'); return; }
+  toast(id ? 'Ferramenta atualizada!' : 'Ferramenta cadastrada!');
+  fecharModal();
+  renderFerramentas();
+};
+
+window.exportarFerramentas = function() {
+  const d = window._ferData || [];
+  exportCSV([
+    ['Código','Nome','Categoria','Unidade','Estoque Mínimo','Ativo'],
+    ...d.map(f=>[f.codigo,f.nome,f.categoria,f.unidade,f.estoque_minimo,f.ativo?'Sim':'Não'])
+  ], 'ferramentas');
+};
+
+// ══════════════════════════════════════════════
+// INSUMOS
+// ══════════════════════════════════════════════
+async function renderInsumos() {
+  const { data } = await sb.from('insumos_estoque').select('*').order('descricao');
+  document.getElementById('main').innerHTML = `
+    <div class="page-hdr">
+      <h2>📦 Insumos</h2><span class="badge-cnt badge">${(data||[]).length}</span>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary btn-sm" onclick="exportarInsumos()">⬇ CSV</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="search-box">🔍 <input placeholder="Buscar..." oninput="filtrarTabela('tbIns',this.value,[0,1])"></div>
+      </div>
+      <table id="tbIns"><thead><tr>
+        <th>Código</th><th>Descrição</th><th>Unidade</th><th>Qtd. Atual</th><th>Mín.</th><th>Status</th>
+      </tr></thead><tbody>
+      ${(data||[]).map(i=>{
+        const pct = i.estoque_minimo > 0 ? Math.min(100, Math.round(i.qtd_atual / i.estoque_minimo * 100)) : 100;
+        const cor = pct <= 50 ? 'var(--danger)' : pct <= 100 ? 'var(--warn)' : 'var(--ok)';
+        const status = i.estoque_minimo > 0 && i.qtd_atual <= 0 ? 'ZERADO' :
+                       i.estoque_minimo > 0 && i.qtd_atual <= i.estoque_minimo ? 'BAIXO' : 'OK';
+        return `<tr>
+          <td><b>${i.codigo}</b></td><td>${i.descricao}</td><td>${i.unidade||'un'}</td>
+          <td><b>${fmtQtd(i.qtd_atual)}</b></td><td>${fmtQtd(i.estoque_minimo)}</td>
+          <td>
+            <div class="pct-bar">
+              <div class="stock-bar" style="width:80px"><div class="stock-bar-fill" style="width:${pct}%;background:${cor}"></div></div>
+              <span class="badge ${status==='OK'?'badge-ok':status==='BAIXO'?'badge-warn':'badge-danger'}">${status}</span>
+            </div>
+          </td>
+        </tr>`;
+      }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Nenhum insumo</td></tr>'}
+      </tbody></table>
+    </div>`;
+  window._insData = data;
+}
+
+window.exportarInsumos = function() {
+  const d = window._insData || [];
+  exportCSV([
+    ['Código','Descrição','Unidade','Qtd Atual','Estoque Mínimo'],
+    ...d.map(i=>[i.codigo,i.descricao,i.unidade,i.qtd_atual,i.estoque_minimo])
+  ], 'insumos');
+};
+
+// ══════════════════════════════════════════════
+// CUSTÓDIAS
+// ══════════════════════════════════════════════
+async function renderCustodias() {
+  const { data, error } = await sb.from('custodias')
+    .select(`id,quantidade,data_entrega,prazo_devolucao,ativa,
+      item:itens!item_id(nome,codigo),
+      bem:bens_patrimoniais!bem_patrimonial_id(numero_patrimonio,historico_legado),
+      funcionario:funcionarios!funcionario_id(nome),
+      obra:obras!obra_id(nome),
+      movimentacao_entrega:movimentacoes!movimentacao_entrega_id(tipo)`)
+    .order('data_entrega', { ascending: false });
+
+  if (error) {
+    document.getElementById('main').innerHTML = `<p style="color:red">Erro: ${error.message}</p>`;
+    return;
+  }
+
+  document.getElementById('main').innerHTML = `
+    <div class="page-hdr">
+      <h2>🤝 Custódias</h2><span class="badge-cnt badge">${(data||[]).length}</span>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary btn-sm" onclick="exportarCustodias()">⬇ CSV</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="search-box">🔍 <input placeholder="Buscar por item ou responsável..." oninput="filtrarTabela('tbCust',this.value,[0,1,2])"></div>
+      </div>
+      <table id="tbCust"><thead><tr>
+        <th>Item / Bem</th><th>Responsável</th><th>Qtd</th><th>Tipo Entrega</th><th>Data</th><th>Status</th>
+      </tr></thead><tbody>
+      ${(data||[]).map(c=>{
+        const itemNome = c.item?.nome || (c.bem?.numero_patrimonio ? 'PAT-' + c.bem.numero_patrimonio : '')
+          || (c.bem?.historico_legado ? c.bem.historico_legado.split('|')[0].trim() : '') || '—';
+        const resp = c.funcionario?.nome || c.obra?.nome || '—';
+        const tipoEntrega = c.movimentacao_entrega ? tipoMovLabel(c.movimentacao_entrega.tipo) : '—';
+        return `<tr>
+          <td><b>${itemNome}</b>${c.item?.codigo?`<br><small style="color:var(--muted)">${c.item.codigo}</small>`:''}</td>
+          <td>${resp}</td>
+          <td>${fmtQtd(c.quantidade)}</td>
+          <td>${tipoEntrega}</td>
+          <td>${fmtData(c.data_entrega)}</td>
+          <td><span class="badge ${c.ativa?'badge-ok':'badge-gray'}">${c.ativa?'Ativo':'Devolvido'}</span></td>
+        </tr>`;
+      }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Nenhuma custódia registrada</td></tr>'}
+      </tbody></table>
+    </div>`;
+  window._custData = data;
+}
+
+window.exportarCustodias = function() {
+  const d = window._custData || [];
+  exportCSV([
+    ['Item/Bem','Responsável','Quantidade','Tipo Entrega','Data','Status'],
+    ...d.map(c=>{
+      const itemNome = c.item?.nome || (c.bem?.numero_patrimonio ? 'PAT-' + c.bem.numero_patrimonio : '') || '';
+      const resp = c.funcionario?.nome || c.obra?.nome || '';
+      const tipoEntrega = c.movimentacao_entrega ? tipoMovLabel(c.movimentacao_entrega.tipo) : '';
+      return [itemNome, resp, c.quantidade, tipoEntrega, c.data_entrega, c.ativa?'Ativo':'Devolvido'];
+    })
+  ], 'custodias');
+};
+
+// ══════════════════════════════════════════════
+// MOVIMENTAÇÕES
+// ══════════════════════════════════════════════
+async function renderMovimentacoes() {
+  const { data } = await sb.from('movimentacoes')
+    .select(`id,tipo,status,observacoes,criado_em,confirmado_em,
+      criado_por:usuarios!usuario_criador_id(nome),
+      confirmado_por:usuarios!confirmado_por_id(nome),
+      responsavel:usuarios!responsavel_id(nome)`)
+    .order('criado_em', { ascending: false }).limit(100);
+
+  document.getElementById('main').innerHTML = `
+    <div class="page-hdr">
+      <h2>↕️ Movimentações</h2>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary btn-sm" onclick="exportarMovimentacoes()">⬇ CSV</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="search-box">🔍 <input placeholder="Buscar..." oninput="filtrarTabela('tbMov',this.value,[0,1,2])"></div>
+      </div>
+      <table id="tbMov"><thead><tr>
+        <th>Tipo</th><th>Criado por</th><th>Responsável</th><th>Data</th><th>Status</th>
+      </tr></thead><tbody>
+      ${(data||[]).map(m=>`<tr>
+        <td>${tipoMovLabel(m.tipo)}</td>
+        <td>${m.criado_por?.nome||'—'}</td>
+        <td>${m.responsavel?.nome||'—'}</td>
+        <td>${fmtData(m.criado_em)}</td>
+        <td><span class="badge ${m.status==='CONFIRMADA'?'badge-ok':m.status==='RASCUNHO'?'badge-warn':m.status==='ESTORNADA'?'badge-danger':'badge-gray'}">${m.status||'—'}</span></td>
+      </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px">Nenhuma movimentação</td></tr>'}
+      </tbody></table>
+    </div>`;
+  window._movData = data;
+}
+
+window.exportarMovimentacoes = function() {
+  const d = window._movData || [];
+  exportCSV([
+    ['Tipo','Criado por','Responsável','Data','Status'],
+    ...d.map(m=>[tipoMovLabel(m.tipo),m.criado_por?.nome,m.responsavel?.nome,m.criado_em,m.status])
+  ], 'movimentacoes');
+};
+
+// ══════════════════════════════════════════════
+// REQUISIÇÕES
+// ══════════════════════════════════════════════
+async function renderRequisicoes() {
+  const editar = podeEditar();
+  let query = sb.from('requisicoes_material').select('*').order('criado_em', { ascending: false });
+  if (currentPerfil === 'CHEFE_OBRA') {
+    query = query.eq('solicitante_id', currentUser.id);
+  }
+  const { data } = await query;
+
+  const statusBadge = { pendente:'badge-warn', aprovada:'badge-blue', entregue:'badge-ok', recusada:'badge-danger' };
+
+  document.getElementById('main').innerHTML = `
+    <div class="page-hdr">
+      <h2>📋 Requisições</h2><span class="badge-cnt badge">${(data||[]).length}</span>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" onclick="novaRequisicao()">+ Nova</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportarRequisicoes()">⬇ CSV</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="search-box">🔍 <input placeholder="Buscar..." oninput="filtrarTabela('tbReq',this.value,[0,1,2])"></div>
+        <select onchange="filtrarStatus(this.value)" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:.85rem;background:var(--bg)">
+          <option value="">Todos</option>
+          <option value="pendente">Pendentes</option>
+          <option value="aprovada">Aprovadas</option>
+          <option value="entregue">Entregues</option>
+          <option value="recusada">Recusadas</option>
+        </select>
+      </div>
+      <table id="tbReq"><thead><tr>
+        <th>Código</th><th>Solicitante</th><th>Obra/Setor</th><th>Data</th><th>Status</th><th></th>
+      </tr></thead><tbody>
+      ${(data||[]).map(r=>`<tr data-status="${r.status}">
+        <td><b>${r.codigo}</b></td>
+        <td>${r.solicitante_nome}</td>
+        <td>${r.obra_nome||'—'}</td>
+        <td>${fmtData(r.criado_em)}</td>
+        <td><span class="badge ${statusBadge[r.status]||'badge-gray'}">${r.status.toUpperCase()}</span></td>
+        <td><div class="actions">
+          <button class="btn btn-secondary btn-sm" onclick='verRequisicao("${r.id}")'>👁</button>
+          ${editar && r.status==='pendente' ? `<button class="btn btn-primary btn-sm" onclick='aprovarRequisicao("${r.id}")'>✓ Aprovar</button>` : ''}
+          ${editar && r.status==='aprovada' ? `<button class="btn btn-primary btn-sm" onclick='entregarRequisicao("${r.id}")'>📦 Entregar</button>` : ''}
+          <button class="btn btn-secondary btn-sm" onclick='imprimirRequisicao("${r.id}")'>🖨</button>
+        </div></td>
+      </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Nenhuma requisição</td></tr>'}
+      </tbody></table>
+    </div>`;
+  window._reqData = data;
+}
+
+window.filtrarStatus = function(status) {
+  document.querySelectorAll('#tbReq tbody tr').forEach(tr => {
+    tr.style.display = !status || tr.dataset.status === status ? '' : 'none';
+  });
+};
+
+window.novaRequisicao = async function() {
+  const { data: obras } = await sb.from('obras').select('id,nome').eq('ativa', true).order('nome');
+  abrirModal('Nova Requisição de Material', `
+    <div class="form-grid">
+      <div class="form-row"><label>Solicitante *</label><input id="req-sol" value="${currentUser?.nome||''}"></div>
+      <div class="form-row"><label>Cargo</label><input id="req-cargo" placeholder="Ex: Engenheiro"></div>
+    </div>
+    <div class="form-row"><label>Obra/Setor</label>
+      <select id="req-obra">
+        <option value="">— Selecionar —</option>
+        ${(obras||[]).map(o=>`<option value="${o.id}" data-nome="${o.nome}">${o.nome}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-row"><label>Data Necessidade</label><input type="date" id="req-datanec"></div>
+    <div class="form-row"><label>Justificativa</label><textarea id="req-just" rows="2" placeholder="Para que serão usados os itens..."></textarea></div>
+    <hr style="margin:16px 0;border-color:var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <b>Itens</b>
+      <button class="btn btn-secondary btn-sm" onclick="addItemReq()">+ Adicionar</button>
+    </div>
+    <div id="req-itens">${itemReqHtml(0)}</div>
+  `, `<button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarRequisicao()">Enviar Requisição</button>`);
+  window.itemReqCnt = 1;
+};
+
+window.addItemReq = function() {
+  document.getElementById('req-itens').insertAdjacentHTML('beforeend', itemReqHtml(window.itemReqCnt++));
+};
+
+function itemReqHtml(i) {
+  return `<div class="form-grid" id="req-item-${i}" style="margin-bottom:8px;align-items:end">
+    <div class="form-row" style="margin:0"><label>Item ${i+1}</label><input id="req-item-desc-${i}" placeholder="Descrição do item"></div>
+    <div style="display:flex;gap:6px;align-items:flex-end">
+      <div class="form-row" style="margin:0;flex:1"><label>Qtd</label><input type="number" id="req-item-qtd-${i}" value="1" min="1" style="width:70px"></div>
+      <button class="btn btn-danger btn-sm" style="margin-bottom:0" onclick="document.getElementById('req-item-${i}').remove()">✕</button>
+    </div>
+  </div>`;
+}
+
+window.salvarRequisicao = async function() {
+  const solicitante = document.getElementById('req-sol').value.trim();
+  if (!solicitante) { toast('Informe o solicitante', 'err'); return; }
+  const obraEl = document.getElementById('req-obra');
+  const obraId = obraEl.value || null;
+  const obraNome = obraEl.options[obraEl.selectedIndex]?.dataset.nome || null;
+  const { data: codData } = await sb.rpc('proximo_codigo', { p_chave: 'REQ', p_prefixo: 'REQ-' });
+  const codigo = codData;
+  const { data: req, error } = await sb.from('requisicoes_material').insert({
+    codigo, solicitante_id: currentUser.id, solicitante_nome: solicitante,
+    solicitante_cargo: document.getElementById('req-cargo').value.trim()||null,
+    obra_id: obraId, obra_nome: obraNome,
+    data_necessidade: document.getElementById('req-datanec').value||null,
+    justificativa: document.getElementById('req-just').value.trim()||null,
+  }).select().single();
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+  const itens = [];
+  let i = 0;
+  while (i < 100) {
+    const descEl = document.getElementById(`req-item-desc-${i}`);
+    if (!descEl) { i++; if(i>50) break; continue; }
+    const desc = descEl.value.trim();
+    if (desc) itens.push({ requisicao_id: req.id, descricao: desc, quantidade: parseFloat(document.getElementById(`req-item-qtd-${i}`).value)||1 });
+    i++;
+  }
+  if (itens.length) await sb.from('requisicao_material_itens').insert(itens);
+  toast(`Requisição ${codigo} criada!`);
+  fecharModal();
+  renderRequisicoes();
+};
+
+window.aprovarRequisicao = async function(id) {
+  const { error } = await sb.from('requisicoes_material').update({
+    status: 'aprovada', aprovado_por_id: currentUser.id,
+    aprovado_por_nome: currentUser.nome, aprovado_em: new Date().toISOString()
+  }).eq('id', id);
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+  toast('Requisição aprovada!');
+  renderRequisicoes();
+};
+
+window.entregarRequisicao = async function(id) {
+  const { error } = await sb.from('requisicoes_material').update({
+    status: 'entregue', entregue_por_id: currentUser.id,
+    entregue_por_nome: currentUser.nome, entregue_em: new Date().toISOString()
+  }).eq('id', id);
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+  toast('Entrega registrada!');
+  renderRequisicoes();
+};
+
+window.verRequisicao = async function(id) {
+  const { data: r } = await sb.from('requisicoes_material').select('*').eq('id',id).single();
+  const { data: itens } = await sb.from('requisicao_material_itens').select('*').eq('requisicao_id',id).order('id');
+  if (!r) return;
+  abrirModal(`Requisição ${r.codigo}`, `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div><b>Solicitante:</b> ${r.solicitante_nome}</div>
+      <div><b>Cargo:</b> ${r.solicitante_cargo||'—'}</div>
+      <div><b>Obra/Setor:</b> ${r.obra_nome||'—'}</div>
+      <div><b>Data necessidade:</b> ${fmtData(r.data_necessidade)}</div>
+      <div><b>Status:</b> <span style="text-transform:uppercase;font-weight:700">${r.status}</span></div>
+      <div><b>Criada em:</b> ${fmtData(r.criado_em)}</div>
+    </div>
+    ${r.justificativa ? `<p style="margin-bottom:12px"><b>Justificativa:</b> ${r.justificativa}</p>` : ''}
+    <b>Itens:</b>
+    <table style="width:100%;margin-top:8px"><thead><tr><th>Item</th><th>Descrição</th><th>Qtd</th></tr></thead><tbody>
+    ${(itens||[]).map((it,i)=>`<tr><td>${i+1}</td><td>${it.descricao}</td><td>${fmtQtd(it.quantidade)}</td></tr>`).join('')||'<tr><td colspan="3">Nenhum item</td></tr>'}
+    </tbody></table>
+    ${r.aprovado_por_nome ? `<p style="margin-top:12px;color:var(--ok)"><b>Aprovado por:</b> ${r.aprovado_por_nome} em ${fmtData(r.aprovado_em)}</p>` : ''}
+    ${r.entregue_por_nome ? `<p style="color:var(--accent)"><b>Entregue por:</b> ${r.entregue_por_nome} em ${fmtData(r.entregue_em)}</p>` : ''}
+  `, `<button class="btn btn-secondary" onclick="fecharModal()">Fechar</button>
+      <button class="btn btn-primary" onclick='imprimirRequisicao("${id}")'>🖨 Imprimir</button>`);
+};
+
+window.imprimirRequisicao = async function(id) {
+  const { data: r } = await sb.from('requisicoes_material').select('*').eq('id',id).single();
+  const { data: itens } = await sb.from('requisicao_material_itens').select('*').eq('requisicao_id',id).order('id');
+  const cfg = configEmpresa;
+  const statusCor = { pendente:'#d69e2e', aprovada:'#3182ce', entregue:'#38a169', recusada:'#e53e3e' };
+  const w = window.open('','_blank','width=900,height=700');
+  w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>Requisição ${r.codigo}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;padding:24px;color:#1a202c}
+  .hdr{text-align:center;border-bottom:2px solid #2d6a4f;padding-bottom:12px;margin-bottom:16px}
+  .hdr h1{font-size:15px;color:#2d6a4f}.hdr p{font-size:11px;color:#555}
+  .titulo{text-align:center;font-size:14px;font-weight:700;margin:12px 0}
+  .status-bar{text-align:center;padding:6px;border-radius:6px;font-weight:700;color:#fff;margin-bottom:14px;background:${statusCor[r.status]||'#555'};font-size:13px}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+  .info-box{border:1px solid #e2e8f0;border-radius:6px;padding:8px}
+  .info-box label{font-size:10px;color:#718096;display:block;margin-bottom:2px}
+  .info-box span{font-size:12px;font-weight:600}
+  table{width:100%;border-collapse:collapse;margin-bottom:16px}
+  th{background:#2d6a4f;color:#fff;padding:7px 10px;text-align:left;font-size:11px}
+  td{padding:7px 10px;border:1px solid #e2e8f0;font-size:11px}
+  .assinaturas{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:24px}
+  .assinatura{border-top:1px solid #333;padding-top:6px;text-align:center;font-size:10px}
+  @media print{body{padding:0}}
+  </style></head><body>
+  <div class="hdr"><h1>${cfg.nome}</h1>
+  ${cfg.cnpj?`<p>CNPJ: ${cfg.cnpj}</p>`:''}
+  ${cfg.endereco?`<p>${cfg.endereco}${cfg.cidade?', '+cfg.cidade:''}</p>`:''}
+  ${cfg.telefone||cfg.email?`<p>${[cfg.telefone,cfg.email].filter(Boolean).join(' | ')}</p>`:''}
+  </div>
+  <div class="titulo">REQUISIÇÃO DE MATERIAL — ${r.codigo}</div>
+  <div class="status-bar">${r.status.toUpperCase()}</div>
+  <div class="info-grid">
+    <div class="info-box"><label>Solicitante</label><span>${r.solicitante_nome}</span></div>
+    <div class="info-box"><label>Cargo</label><span>${r.solicitante_cargo||'—'}</span></div>
+    <div class="info-box"><label>Obra/Setor</label><span>${r.obra_nome||'—'}</span></div>
+    <div class="info-box"><label>Data da Solicitação</label><span>${fmtData(r.criado_em)}</span></div>
+    <div class="info-box"><label>Data de Necessidade</label><span>${fmtData(r.data_necessidade)}</span></div>
+    <div class="info-box"><label>Status</label><span>${r.status.toUpperCase()}</span></div>
+  </div>
+  <table><thead><tr><th>#</th><th>Descrição do Item</th><th>Quantidade</th><th>Observação</th></tr></thead><tbody>
+  ${(itens||[]).map((it,i)=>`<tr><td>${i+1}</td><td>${it.descricao}</td><td>${it.quantidade}</td><td>${it.observacao||''}</td></tr>`).join('')}
+  </tbody></table>
+  ${r.justificativa?`<p style="margin-bottom:16px"><b>Justificativa:</b> ${r.justificativa}</p>`:''}
+  <div class="assinaturas">
+    <div class="assinatura">______________________________<br>${r.solicitante_nome}<br>Solicitante</div>
+    <div class="assinatura">______________________________<br>${r.aprovado_por_nome||'_________________________'}<br>Aprovado por</div>
+    <div class="assinatura">______________________________<br>${r.entregue_por_nome||'_________________________'}<br>Recebido por</div>
+  </div>
+  <p style="text-align:center;margin-top:20px;font-size:10px;color:#718096">${cfg.nome} — Emitido em ${new Date().toLocaleDateString('pt-BR')}</p>
+  <script>window.onload=()=>window.print()<\/script></body></html>`);
+};
+
+window.exportarRequisicoes = function() {
+  const d = window._reqData || [];
+  exportCSV([
+    ['Código','Solicitante','Cargo','Obra','Status','Data','Aprovado por','Entregue por'],
+    ...d.map(r=>[r.codigo,r.solicitante_nome,r.solicitante_cargo,r.obra_nome,r.status,r.criado_em,r.aprovado_por_nome,r.entregue_por_nome])
+  ], 'requisicoes');
+};
+
+// ══════════════════════════════════════════════
+// CHECKLISTS
+// ══════════════════════════════════════════════
+async function renderChecklists() {
+  const editar = podeEditar();
+  const { data } = await sb.from('checklists').select('*,checklist_itens(id,concluido)').order('criado_em', { ascending: false });
+  document.getElementById('main').innerHTML = `
+    <div class="page-hdr">
+      <h2>✅ Checklists</h2><span class="badge-cnt badge">${(data||[]).length}</span>
+      <div class="spacer"></div>
+      ${editar ? `<button class="btn btn-primary" onclick="novoChecklist()">+ Novo</button>` : ''}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+    ${(data||[]).map(c=>{
+      const total = c.checklist_itens?.length || 0;
+      const feitos = c.checklist_itens?.filter(i=>i.concluido).length || 0;
+      const pct = total > 0 ? Math.round(feitos/total*100) : 0;
+      return `<div class="table-wrap" style="padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div><b>${c.nome}</b>${c.obra_nome?`<br><small style="color:var(--muted)">${c.obra_nome}</small>`:''}</div>
+          <span class="badge ${c.status==='ativo'?'badge-ok':c.status==='concluido'?'badge-blue':'badge-gray'}">${c.status}</span>
+        </div>
+        <div class="pct-bar" style="margin:8px 0">
+          <div class="stock-bar" style="flex:1"><div class="stock-bar-fill" style="width:${pct}%;background:var(--accent)"></div></div>
+          <span>${feitos}/${total} (${pct}%)</span>
+        </div>
+        <div class="actions" style="margin-top:10px">
+          <button class="btn btn-secondary btn-sm" onclick='abrirChecklist("${c.id}")'>Ver itens</button>
+          ${editar ? `<button class="btn btn-danger btn-sm" onclick="excluirChecklist('${c.id}')">🗑</button>` : ''}
+        </div>
+      </div>`;
+    }).join('')||'<div class="empty-state"><div class="icon">✅</div><p>Nenhum checklist criado</p></div>'}
+    </div>`;
+}
+
+window.novoChecklist = async function() {
+  const { data: obras } = await sb.from('obras').select('id,nome').eq('ativa', true).order('nome');
+  abrirModal('Novo Checklist', `
+    <div class="form-row"><label>Nome do Checklist *</label><input id="chk-nome" placeholder="Ex: Checklist de obra X"></div>
+    <div class="form-row"><label>Obra/Setor</label>
+      <select id="chk-obra">
+        <option value="">— Nenhuma —</option>
+        ${(obras||[]).map(o=>`<option value="${o.id}" data-nome="${o.nome}">${o.nome}</option>`).join('')}
+      </select>
+    </div>
+    <hr style="margin:14px 0;border-color:var(--border)">
+    <div style="display:flex;justify-content:space-between;margin-bottom:10px"><b>Itens</b>
+      <button class="btn btn-secondary btn-sm" onclick="addItemChk()">+ Item</button>
+    </div>
+    <div id="chk-itens">${chkItemHtml(0)}</div>
+  `, `<button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarChecklist()">Criar</button>`);
+  window.chkCnt = 1;
+};
+
+window.addItemChk = function() {
+  document.getElementById('chk-itens').insertAdjacentHTML('beforeend', chkItemHtml(window.chkCnt++));
+};
+
+function chkItemHtml(i) {
+  return `<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center" id="ci-${i}">
+    <input id="ci-desc-${i}" placeholder="Descrição do item..." style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:.85rem">
+    <button class="btn btn-danger btn-sm" onclick="document.getElementById('ci-${i}').remove()">✕</button>
+  </div>`;
+}
+
+window.salvarChecklist = async function() {
+  const nome = document.getElementById('chk-nome').value.trim();
+  if (!nome) { toast('Informe o nome', 'err'); return; }
+  const obraEl = document.getElementById('chk-obra');
+  const obraId = obraEl.value || null;
+  const obraNome = obraEl.options[obraEl.selectedIndex]?.dataset.nome || null;
+  const { data: codData } = await sb.rpc('proximo_codigo', { p_chave: 'CHK', p_prefixo: 'CHK-' });
+  const { data: chk, error } = await sb.from('checklists').insert({
+    codigo: codData, nome, obra_id: obraId, obra_nome: obraNome,
+    criado_por_id: currentUser.id, criado_por_nome: currentUser.nome
+  }).select().single();
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+  const itens = [];
+  let i = 0;
+  while (i < 100) {
+    const el = document.getElementById(`ci-desc-${i}`);
+    if (!el) { i++; continue; }
+    const d = el.value.trim();
+    if (d) itens.push({ checklist_id: chk.id, descricao: d, ordem: i });
+    i++;
+    if (i > 50) break;
+  }
+  if (itens.length) await sb.from('checklist_itens').insert(itens);
+  toast('Checklist criado!');
+  fecharModal();
+  renderChecklists();
+};
+
+window.abrirChecklist = async function(id) {
+  const { data: c } = await sb.from('checklists').select('*').eq('id',id).single();
+  const { data: itens } = await sb.from('checklist_itens').select('*').eq('checklist_id',id).order('ordem');
+  abrirModal(c.nome, `
+    ${c.obra_nome?`<p style="color:var(--muted);margin-bottom:12px">Obra: ${c.obra_nome}</p>`:''}
+    <div id="chk-itens-list">
+    ${(itens||[]).map(it=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <input type="checkbox" id="ci-${it.id}" ${it.concluido?'checked':''} onchange="toggleItem('${it.id}',this.checked)" style="width:18px;height:18px;cursor:pointer">
+        <label for="ci-${it.id}" style="cursor:pointer;${it.concluido?'text-decoration:line-through;color:var(--muted)':''}">${it.descricao}</label>
+        ${it.concluido && it.concluido_por_nome ? `<small style="color:var(--muted);margin-left:auto">${it.concluido_por_nome}</small>` : ''}
+      </div>`).join('')||'<p style="color:var(--muted)">Nenhum item</p>'}
+    </div>
+  `, `<button class="btn btn-secondary" onclick="fecharModal()">Fechar</button>`);
+};
+
+window.toggleItem = async function(id, checked) {
+  await sb.from('checklist_itens').update({
+    concluido: checked,
+    concluido_por_id: checked ? currentUser.id : null,
+    concluido_por_nome: checked ? currentUser.nome : null,
+    concluido_em: checked ? new Date().toISOString() : null
+  }).eq('id', id);
+};
+
+window.excluirChecklist = async function(id) {
+  if (!confirm('Excluir este checklist?')) return;
+  await sb.from('checklists').delete().eq('id', id);
+  toast('Checklist excluído!');
+  renderChecklists();
+};
+
+// ══════════════════════════════════════════════
+// RELATÓRIO
+// ══════════════════════════════════════════════
+async function renderRelatorio() {
+  const hoje = new Date().toISOString().slice(0,10);
+  const mesInicio = hoje.slice(0,8) + '01';
+  document.getElementById('main').innerHTML = `
+    <div class="page-hdr"><h2>📈 Relatório por Período</h2></div>
+    <div class="table-wrap" style="padding:16px;margin-bottom:20px">
+      <div class="form-grid">
+        <div class="form-row"><label>Data início</label><input type="date" id="rel-ini" value="${mesInicio}"></div>
+        <div class="form-row"><label>Data fim</label><input type="date" id="rel-fim" value="${hoje}"></div>
+      </div>
+      <button class="btn btn-primary" onclick="gerarRelatorio()">Gerar Relatório</button>
+      <button class="btn btn-secondary" style="margin-left:8px" onclick="exportarRelatorio()">⬇ CSV</button>
+    </div>
+    <div id="rel-resultado"></div>`;
+}
+
+window.gerarRelatorio = async function() {
+  const ini = document.getElementById('rel-ini').value;
+  const fim = document.getElementById('rel-fim').value + 'T23:59:59';
+  const [{ data: movs }, { data: reqs }] = await Promise.all([
+    sb.from('movimentacoes')
+      .select('tipo,status,criado_em,criado_por:usuarios!usuario_criador_id(nome)')
+      .gte('criado_em', ini).lte('criado_em', fim).eq('status','CONFIRMADA').order('criado_em', { ascending: false }),
+    sb.from('requisicoes_material')
+      .select('status,solicitante_nome,obra_nome,criado_em')
+      .gte('criado_em', ini).lte('criado_em', fim).order('criado_em', { ascending: false }),
+  ]);
+
+  const totalMov = movs?.length || 0;
+  const totalReq = reqs?.length || 0;
+  const reqEntregues = reqs?.filter(r=>r.status==='entregue').length || 0;
+  const reqPendentes = reqs?.filter(r=>r.status==='pendente').length || 0;
+
+  document.getElementById('rel-resultado').innerHTML = `
+    <div class="stats-grid" style="margin-bottom:16px">
+      <div class="stat-card"><div class="label">Movimentações</div><div class="value">${totalMov}</div></div>
+      <div class="stat-card"><div class="label">Requisições</div><div class="value">${totalReq}</div></div>
+      <div class="stat-card"><div class="label">Req. Entregues</div><div class="value" style="color:var(--ok)">${reqEntregues}</div></div>
+      <div class="stat-card"><div class="label">Req. Pendentes</div><div class="value" style="color:var(--warn)">${reqPendentes}</div></div>
+    </div>
+    <div class="table-wrap" style="margin-bottom:16px">
+      <div class="table-toolbar"><strong>Movimentações no período</strong></div>
+      <table><thead><tr><th>Tipo</th><th>Criado por</th><th>Data</th></tr></thead><tbody>
+      ${(movs||[]).map(m=>`<tr>
+        <td>${tipoMovLabel(m.tipo)}</td>
+        <td>${m.criado_por?.nome||'—'}</td>
+        <td>${fmtData(m.criado_em)}</td>
+      </tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--muted)">Nenhuma movimentação no período</td></tr>'}
+      </tbody></table>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar"><strong>Requisições no período</strong></div>
+      <table><thead><tr><th>Solicitante</th><th>Obra</th><th>Status</th><th>Data</th></tr></thead><tbody>
+      ${(reqs||[]).map(r=>`<tr>
+        <td>${r.solicitante_nome}</td><td>${r.obra_nome||'—'}</td>
+        <td><span class="badge ${r.status==='entregue'?'badge-ok':r.status==='pendente'?'badge-warn':'badge-gray'}">${r.status}</span></td>
+        <td>${fmtData(r.criado_em)}</td>
+      </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--muted)">Nenhuma requisição no período</td></tr>'}
+      </tbody></table>
+    </div>`;
+  window._relData = reqs;
+  window._relMovData = movs;
+};
+
+window.exportarRelatorio = function() {
+  if (!window._relData) { gerarRelatorio().then(exportarRelatorio); return; }
+  exportCSV([
+    ['Solicitante','Obra','Status','Data'],
+    ...(window._relData||[]).map(r=>[r.solicitante_nome,r.obra_nome,r.status,r.criado_em])
+  ], 'relatorio');
+};
+
+// ══════════════════════════════════════════════
+// OBRAS
+// ══════════════════════════════════════════════
+async function renderObras() {
+  const { data } = await sb.from('obras').select('*,funcionarios(nome)').order('nome');
+  document.getElementById('main').innerHTML = `
+    <div class="page-hdr"><h2>🏗️ Obras / Setores</h2><span class="badge-cnt badge">${(data||[]).length}</span>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" onclick="novaObra()">+ Nova</button>
+    </div>
+    <div class="table-wrap">
+      <table><thead><tr><th>Código</th><th>Nome</th><th>Responsável</th><th>Status</th><th></th></tr></thead><tbody>
+      ${(data||[]).map(o=>`<tr>
+        <td>${o.codigo||'—'}</td><td>${o.nome}</td>
+        <td>${o.funcionarios?.nome||'—'}</td>
+        <td><span class="badge ${o.ativa?'badge-ok':'badge-gray'}">${o.ativa?'Ativa':'Inativa'}</span></td>
+        <td><div class="actions">
+          <button class="btn btn-secondary btn-sm" onclick='editarObra(${JSON.stringify(o).replace(/'/g,"&#39;")})'>✏️</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleObra('${o.id}',${o.ativa})">${o.ativa?'Desativar':'Ativar'}</button>
+        </div></td>
+      </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px">Nenhuma obra cadastrada</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+
+window.novaObra = function() {
+  abrirModal('Nova Obra/Setor', `
+    <div class="form-row"><label>Nome *</label><input id="ob-nome" placeholder="Nome da obra ou setor"></div>
+    <div class="form-row"><label>Código</label><input id="ob-cod" placeholder="Ex: OBR-001"></div>
+    <div class="form-row"><label>Cliente</label><input id="ob-cliente"></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Cidade</label><input id="ob-cidade"></div>
+      <div class="form-row"><label>UF</label><input id="ob-uf" maxlength="2" style="text-transform:uppercase"></div>
+    </div>
+  `, `<button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarObra()">Salvar</button>`);
+};
+
+window.editarObra = function(o) {
+  abrirModal('Editar Obra/Setor', `
+    <input type="hidden" id="ob-id" value="${o.id}">
+    <div class="form-row"><label>Nome *</label><input id="ob-nome" value="${o.nome}"></div>
+    <div class="form-row"><label>Código</label><input id="ob-cod" value="${o.codigo||''}"></div>
+    <div class="form-row"><label>Cliente</label><input id="ob-cliente" value="${o.cliente||''}"></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Cidade</label><input id="ob-cidade" value="${o.cidade||''}"></div>
+      <div class="form-row"><label>UF</label><input id="ob-uf" value="${o.uf||''}" maxlength="2" style="text-transform:uppercase"></div>
+    </div>
+  `, `<button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarObra('${o.id}')">Salvar</button>`);
+};
+
+window.salvarObra = async function(id) {
+  const nome = document.getElementById('ob-nome').value.trim();
+  if (!nome) { toast('Nome obrigatório', 'err'); return; }
+  const payload = {
+    nome, codigo: document.getElementById('ob-cod').value.trim()||null,
+    cliente: document.getElementById('ob-cliente').value.trim()||null,
+    cidade: document.getElementById('ob-cidade').value.trim()||null,
+    uf: document.getElementById('ob-uf').value.trim().toUpperCase()||null,
+  };
+  const { error } = id
+    ? await sb.from('obras').update(payload).eq('id', id)
+    : await sb.from('obras').insert({ ...payload, ativa: true });
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+  toast(id ? 'Obra atualizada!' : 'Obra cadastrada!');
+  fecharModal();
+  renderObras();
+};
+
+window.toggleObra = async function(id, ativa) {
+  await sb.from('obras').update({ ativa: !ativa }).eq('id', id);
+  renderObras();
+};
+
+// ══════════════════════════════════════════════
+// USUÁRIOS (admin)
+// ══════════════════════════════════════════════
+async function renderUsuarios() {
+  if (!['ADMINISTRADOR','GESTOR'].includes(currentPerfil)) {
+    document.getElementById('main').innerHTML = '<div class="empty-state"><div class="icon">🔒</div><p>Acesso restrito a administradores</p></div>';
+    return;
+  }
+  const { data } = await sb.from('usuarios').select('*').order('nome');
+  document.getElementById('main').innerHTML = `
+    <div class="page-hdr"><h2>👥 Usuários</h2><span class="badge-cnt badge">${(data||[]).length}</span>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" onclick="novoUsuario()">+ Convidar</button>
+    </div>
+    <div class="table-wrap">
+      <table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th></th></tr></thead><tbody>
+      ${(data||[]).map(u=>`<tr>
+        <td><b>${u.nome}</b></td><td>${u.email}</td>
+        <td><span class="badge badge-blue">${u.perfil}</span></td>
+        <td><span class="badge ${u.ativo?'badge-ok':'badge-gray'}">${u.ativo?'Ativo':'Inativo'}</span></td>
+        <td><div class="actions">
+          <button class="btn btn-secondary btn-sm" onclick='editarUsuario(${JSON.stringify(u).replace(/'/g,"&#39;")})'>✏️</button>
+        </div></td>
+      </tr>`).join('')}
+      </tbody></table>
+    </div>
+    <div class="table-wrap" style="margin-top:16px;padding:16px">
+      <h3 style="margin-bottom:10px;font-size:.95rem">Perfis de Acesso</h3>
+      <table><thead><tr><th>Perfil</th><th>Descrição</th></tr></thead><tbody>
+        <tr><td><span class="badge badge-danger">ADMINISTRADOR</span></td><td>Acesso total — gerencia usuários, configurações e todos os módulos</td></tr>
+        <tr><td><span class="badge badge-warn">GESTOR</span></td><td>Aprova requisições, acessa relatórios, edita estoque</td></tr>
+        <tr><td><span class="badge badge-blue">ALMOXARIFE</span></td><td>Cadastra e movimenta estoque, aprova e entrega requisições</td></tr>
+        <tr><td><span class="badge badge-ok">CHEFE_OBRA</span></td><td>Cria requisições, acompanha suas próprias solicitações</td></tr>
+        <tr><td><span class="badge badge-gray">CONSULTA</span></td><td>Somente leitura — visualiza dashboards e relatórios</td></tr>
+      </tbody></table>
+    </div>`;
+}
+
+window.novoUsuario = function() {
+  abrirModal('Convidar Usuário', `
+    <div class="form-row"><label>Nome *</label><input id="usr-nome" placeholder="Nome completo"></div>
+    <div class="form-row"><label>E-mail *</label><input type="email" id="usr-email" placeholder="email@empresa.com"></div>
+    <div class="form-row"><label>Perfil *</label>
+      <select id="usr-perfil">
+        <option value="CHEFE_OBRA">CHEFE_OBRA — Solicitante</option>
+        <option value="ALMOXARIFE">ALMOXARIFE</option>
+        <option value="GESTOR">GESTOR</option>
+        <option value="CONSULTA">CONSULTA — Somente leitura</option>
+        <option value="ADMINISTRADOR">ADMINISTRADOR</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Senha inicial *</label><input type="password" id="usr-senha" placeholder="Mínimo 8 caracteres"></div>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:8px">O usuário poderá trocar a senha depois clicando no avatar no canto superior direito.</p>
+  `, `<button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="criarUsuario()">Criar</button>`);
+};
+
+window.criarUsuario = async function() {
+  const nome  = document.getElementById('usr-nome').value.trim();
+  const email = document.getElementById('usr-email').value.trim();
+  const perfil = document.getElementById('usr-perfil').value;
+  const senha = document.getElementById('usr-senha').value;
+  if (!nome || !email || !senha) { toast('Preencha todos os campos', 'err'); return; }
+  if (senha.length < 8) { toast('Senha mínima: 8 caracteres', 'err'); return; }
+  const { error } = await sb.rpc('criar_usuario_auth', { p_nome: nome, p_email: email, p_senha: senha, p_perfil: perfil });
+  if (error) {
+    const { error: e2 } = await sb.from('usuarios').insert({ nome, email, perfil, ativo: true });
+    if (e2) { toast('Erro: ' + e2.message, 'err'); return; }
+    toast(`Usuário ${nome} cadastrado. Auth deve ser criado manualmente.`, 'ok');
+  } else {
+    toast(`Usuário ${nome} criado com sucesso!`);
+  }
+  fecharModal();
+  renderUsuarios();
+};
+
+window.editarUsuario = function(u) {
+  abrirModal('Editar Usuário', `
+    <input type="hidden" id="usr-id" value="${u.id}">
+    <div class="form-row"><label>Nome</label><input id="usr-nome" value="${u.nome}"></div>
+    <div class="form-row"><label>Perfil</label>
+      <select id="usr-perfil">
+        <option value="CHEFE_OBRA" ${u.perfil==='CHEFE_OBRA'?'selected':''}>CHEFE_OBRA</option>
+        <option value="ALMOXARIFE" ${u.perfil==='ALMOXARIFE'?'selected':''}>ALMOXARIFE</option>
+        <option value="GESTOR" ${u.perfil==='GESTOR'?'selected':''}>GESTOR</option>
+        <option value="CONSULTA" ${u.perfil==='CONSULTA'?'selected':''}>CONSULTA</option>
+        <option value="ADMINISTRADOR" ${u.perfil==='ADMINISTRADOR'?'selected':''}>ADMINISTRADOR</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Ativo</label>
+      <select id="usr-ativo">
+        <option value="true" ${u.ativo?'selected':''}>Sim</option>
+        <option value="false" ${!u.ativo?'selected':''}>Não</option>
+      </select>
+    </div>
+  `, `<button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarUsuario('${u.id}')">Salvar</button>`);
+};
+
+window.salvarUsuario = async function(id) {
+  const { error } = await sb.from('usuarios').update({
+    nome: document.getElementById('usr-nome').value.trim(),
+    perfil: document.getElementById('usr-perfil').value,
+    ativo: document.getElementById('usr-ativo').value === 'true'
+  }).eq('id', id);
+  if (error) { toast('Erro: ' + error.message, 'err'); return; }
+  toast('Usuário atualizado!');
+  fecharModal();
+  renderUsuarios();
+};
+
+// ══════════════════════════════════════════════
+// CONFIGURAÇÕES (key-value via configuracoes)
+// ══════════════════════════════════════════════
+async function renderConfiguracoes() {
+  const cfg = configEmpresa;
+  document.getElementById('main').innerHTML = `
+    <div class="page-hdr"><h2>⚙️ Configurações da Empresa</h2></div>
+    <div class="table-wrap" style="padding:24px;max-width:600px">
+      <div class="form-row"><label>Nome da Empresa *</label><input id="cfg-nome" value="${cfg.nome||''}"></div>
+      <div class="form-row"><label>CNPJ</label><input id="cfg-cnpj" value="${cfg.cnpj||''}" placeholder="00.000.000/0001-00"></div>
+      <div class="form-row"><label>Endereço</label><input id="cfg-end" value="${cfg.endereco||''}"></div>
+      <div class="form-row"><label>Cidade</label><input id="cfg-cidade" value="${cfg.cidade||''}"></div>
+      <div class="form-row"><label>Telefone</label><input id="cfg-tel" value="${cfg.telefone||''}" placeholder="(00) 00000-0000"></div>
+      <div class="form-row"><label>E-mail</label><input type="email" id="cfg-email" value="${cfg.email||''}"></div>
+      <div class="form-row"><label>Texto do Rodapé (impressão)</label><textarea id="cfg-rodape" rows="2">${cfg.texto_rodape||''}</textarea></div>
+      <button class="btn btn-primary" onclick="salvarConfig()">Salvar Configurações</button>
+    </div>`;
+}
+
+window.salvarConfig = async function() {
+  const payload = {
+    nome: document.getElementById('cfg-nome').value.trim() || 'Terra Sol Engenharia',
+    cnpj: document.getElementById('cfg-cnpj').value.trim() || null,
+    endereco: document.getElementById('cfg-end').value.trim() || null,
+    cidade: document.getElementById('cfg-cidade').value.trim() || null,
+    telefone: document.getElementById('cfg-tel').value.trim() || null,
+    email: document.getElementById('cfg-email').value.trim() || null,
+    texto_rodape: document.getElementById('cfg-rodape').value.trim() || null,
+  };
+  const { error } = await sb.from('config_empresa').update(payload).eq('id', 1);
+  if (error) { toast('Erro ao salvar: ' + error.message, 'err'); return; }
+  Object.assign(configEmpresa, payload);
+  document.getElementById('config-nome-header').textContent = configEmpresa.nome;
+  toast('Configurações salvas!');
+};
+
+// ══════════════════════════════════════════════
+// FILTRO DE TABELA
+// ══════════════════════════════════════════════
+window.filtrarTabela = function(tbId, q, cols) {
+  const rows = document.querySelectorAll(`#${tbId} tbody tr`);
+  const ql = q.toLowerCase();
+  rows.forEach(tr => {
+    const cells = tr.querySelectorAll('td');
+    const match = cols.some(i => cells[i]?.textContent.toLowerCase().includes(ql));
+    tr.style.display = match ? '' : 'none';
+  });
+};
+
+// ══════════════════════════════════════════════
+// INIT — verificar sessão existente
+// ══════════════════════════════════════════════
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    await carregarUsuario(session.user);
+    mostrarApp();
+  } else {
+    mostrarLogin();
+  }
+})();
+</script>
+</body>
+</html>
