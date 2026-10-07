@@ -145,7 +145,10 @@ tr:hover td{background:rgba(0,0,0,.015)}
     </div>
     <div class="login-field">
       <label>Senha</label>
-      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+      <div style="position:relative;display:flex;align-items:center;">
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" style="flex:1;padding-right:2.4rem;">
+        <button type="button" onclick="toggleSenha()" id="btn-toggle-senha" title="Mostrar/ocultar senha" style="position:absolute;right:0.5rem;background:none;border:none;cursor:pointer;color:#888;font-size:1.1rem;padding:0.2rem;line-height:1;" tabindex="-1">👁</button>
+      </div>
     </div>
     <button class="btn-login" id="btn-login" onclick="fazerLogin()">Entrar</button>
     <div class="login-err" id="login-err"></div>
@@ -264,6 +267,12 @@ async function carregarUsuario(authUser) {
   await carregarConfig();
 }
 
+function toggleSenha() {
+  const inp = document.getElementById('login-pass');
+  const btn = document.getElementById('btn-toggle-senha');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
 async function fazerLogin() {
   const email = document.getElementById('login-email').value.trim();
   const senha = document.getElementById('login-pass').value;
