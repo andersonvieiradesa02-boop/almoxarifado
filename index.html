@@ -455,7 +455,7 @@ async function renderDashboard() {
     sb.from('itens').select('id', { count: 'exact', head: true }).eq('tipo', 'FERRAMENTA').eq('ativo', true),
     sb.from('itens').select('id', { count: 'exact', head: true }).eq('tipo', 'INSUMO').eq('ativo', true),
     sb.from('custodias').select('id', { count: 'exact', head: true }).eq('ativa', true),
-    sb.from('insumos_estoque').select('id,descricao,estoque_minimo,qtd_atual'),
+    sb.from('itens').select('id,descricao,estoque_minimo,ativo').eq('tipo','INSUMO').eq('ativo',true),
     sb.from('requisicoes_material').select('id,codigo,solicitante_nome,obra_nome,criado_em').eq('status','pendente').order('criado_em',{ascending:false}).limit(5),
     sb.from('movimentacoes')
       .select('id,tipo,status,criado_em,criado_por:usuarios!usuario_criador_id(nome)')
@@ -568,9 +568,9 @@ window.exportarPatrimonio = function() {
 // ══════════════════════════════════════════════
 async function renderFerramentas() {
   const { data } = await sb.from('itens')
-    .select('id,codigo,nome,unidade,categoria,descricao,ativo,estoque_minimo')
+    .select('id,codigo,descricao,unidade,categoria,ativo,estoque_minimo')
     .eq('tipo','FERRAMENTA')
-    .order('nome');
+    .order('descricao');
   const editar = podeEditar();
   document.getElementById('main').innerHTML = `
     <div class="page-hdr">
@@ -588,7 +588,7 @@ async function renderFerramentas() {
       </tr></thead><tbody>
       ${(data||[]).map(f=>`<tr>
         <td><b>${f.codigo||'—'}</b></td>
-        <td>${f.nome}</td>
+        <td>${f.descricao||'—'}</td>
         <td>${f.categoria||'—'}</td>
         <td>${f.unidade||'un'}</td>
         <td>${fmtQtd(f.estoque_minimo)}</td>
@@ -630,15 +630,14 @@ function formFerramenta(f={}) {
 }
 
 window.salvarFerramenta = async function(id) {
-  const nome = document.getElementById('fer-nome').value.trim();
-  if (!nome) { toast('Nome obrigatório', 'err'); return; }
+  const descricao = document.getElementById('fer-nome').value.trim();
+  if (!descricao) { toast('Descrição obrigatória', 'err'); return; }
   const payload = {
-    nome,
+    descricao,
     tipo: 'FERRAMENTA',
     codigo: document.getElementById('fer-codigo').value.trim()||null,
     unidade: document.getElementById('fer-unidade').value.trim()||'un',
     categoria: document.getElementById('fer-cat').value.trim()||null,
-    descricao: document.getElementById('fer-desc').value.trim()||null,
     estoque_minimo: parseInt(document.getElementById('fer-min').value)||0,
   };
   let err;
@@ -657,7 +656,7 @@ window.exportarFerramentas = function() {
   const d = window._ferData || [];
   exportCSV([
     ['Código','Nome','Categoria','Unidade','Estoque Mínimo','Ativo'],
-    ...d.map(f=>[f.codigo,f.nome,f.categoria,f.unidade,f.estoque_minimo,f.ativo?'Sim':'Não'])
+    ...d.map(f=>[f.codigo,f.descricao,f.categoria,f.unidade,f.estoque_minimo,f.ativo?'Sim':'Não'])
   ], 'ferramentas');
 };
 
@@ -665,7 +664,7 @@ window.exportarFerramentas = function() {
 // INSUMOS
 // ══════════════════════════════════════════════
 async function renderInsumos() {
-  const { data } = await sb.from('insumos_estoque').select('*').order('descricao');
+  const { data } = await sb.from('itens').select('id,codigo,descricao,unidade_id,estoque_minimo,ativo').eq('tipo','INSUMO').eq('ativo',true).order('descricao');
   document.getElementById('main').innerHTML = `
     <div class="page-hdr">
       <h2>📦 Insumos</h2><span class="badge-cnt badge">${(data||[]).length}</span>
@@ -677,24 +676,13 @@ async function renderInsumos() {
         <div class="search-box">🔍 <input placeholder="Buscar..." oninput="filtrarTabela('tbIns',this.value,[0,1])"></div>
       </div>
       <table id="tbIns"><thead><tr>
-        <th>Código</th><th>Descrição</th><th>Unidade</th><th>Qtd. Atual</th><th>Mín.</th><th>Status</th>
+        <th>Código</th><th>Descrição</th><th>Estoque Mín.</th><th>Status</th>
       </tr></thead><tbody>
-      ${(data||[]).map(i=>{
-        const pct = i.estoque_minimo > 0 ? Math.min(100, Math.round(i.qtd_atual / i.estoque_minimo * 100)) : 100;
-        const cor = pct <= 50 ? 'var(--danger)' : pct <= 100 ? 'var(--warn)' : 'var(--ok)';
-        const status = i.estoque_minimo > 0 && i.qtd_atual <= 0 ? 'ZERADO' :
-                       i.estoque_minimo > 0 && i.qtd_atual <= i.estoque_minimo ? 'BAIXO' : 'OK';
-        return `<tr>
-          <td><b>${i.codigo}</b></td><td>${i.descricao}</td><td>${i.unidade||'un'}</td>
-          <td><b>${fmtQtd(i.qtd_atual)}</b></td><td>${fmtQtd(i.estoque_minimo)}</td>
-          <td>
-            <div class="pct-bar">
-              <div class="stock-bar" style="width:80px"><div class="stock-bar-fill" style="width:${pct}%;background:${cor}"></div></div>
-              <span class="badge ${status==='OK'?'badge-ok':status==='BAIXO'?'badge-warn':'badge-danger'}">${status}</span>
-            </div>
-          </td>
-        </tr>`;
-      }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Nenhum insumo</td></tr>'}
+      ${(data||[]).map(i=>`<tr>
+          <td><b>${i.codigo||'—'}</b></td><td>${i.descricao||'—'}</td>
+          <td>${fmtQtd(i.estoque_minimo)}</td>
+          <td><span class="badge ${i.ativo?'badge-ok':'badge-gray'}">${i.ativo?'Ativo':'Inativo'}</span></td>
+        </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:32px">Nenhum insumo cadastrado</td></tr>'}
       </tbody></table>
     </div>`;
   window._insData = data;
@@ -703,8 +691,8 @@ async function renderInsumos() {
 window.exportarInsumos = function() {
   const d = window._insData || [];
   exportCSV([
-    ['Código','Descrição','Unidade','Qtd Atual','Estoque Mínimo'],
-    ...d.map(i=>[i.codigo,i.descricao,i.unidade,i.qtd_atual,i.estoque_minimo])
+    ['Código','Descrição','Estoque Mínimo','Ativo'],
+    ...d.map(i=>[i.codigo,i.descricao,i.estoque_minimo,i.ativo?'Sim':'Não'])
   ], 'insumos');
 };
 
