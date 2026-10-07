@@ -517,7 +517,7 @@ function tipoMovLabel(tipo) {
 // ══════════════════════════════════════════════
 async function renderPatrimonio() {
   const { data, error } = await sb.from('bens_patrimoniais')
-    .select('id,numero_patrimonio,numero_serie,marca,modelo,situacao,conservacao,historico_legado,ativo,item:itens!item_id(codigo,nome),responsavel:funcionarios!responsavel_id(nome),local:locais!local_atual_id(nome)')
+    .select('id,numero_patrimonio,numero_serie,marca,modelo,situacao,conservacao,historico_legado,ativo,item:itens!item_id(codigo,descricao),responsavel:funcionarios!responsavel_id(nome),local:locais!local_atual_id(nome)')
     .order('numero_patrimonio', { ascending: true });
   if (error) { document.getElementById('main').innerHTML = `<p style="color:red">Erro: ${error.message}</p>`; return; }
 
@@ -536,7 +536,7 @@ async function renderPatrimonio() {
         <th>Nº Pat.</th><th>Item</th><th>Marca/Modelo</th><th>Responsável</th><th>Local</th><th>Situação</th>
       </tr></thead><tbody>
       ${(data||[]).map(b=>{
-        const nome = b.item?.nome || (b.historico_legado ? b.historico_legado.split('|')[0].trim() : '') || '(sem descrição)';
+        const nome = b.item?.descricao || (b.historico_legado ? b.historico_legado.split('|')[0].trim() : '') || '(sem descrição)';
         const codigo = b.item?.codigo || '';
         return `<tr>
           <td><b>${b.numero_patrimonio||'—'}</b></td>
@@ -557,7 +557,7 @@ window.exportarPatrimonio = function() {
   exportCSV([
     ['Nº Patrimônio','Código','Nome','Marca','Modelo','Responsável','Local','Situação'],
     ...d.map(b=>{
-      const nome = b.item?.nome || (b.historico_legado ? b.historico_legado.split('|')[0].trim() : '') || '';
+      const nome = b.item?.descricao || (b.historico_legado ? b.historico_legado.split('|')[0].trim() : '') || '';
       return [b.numero_patrimonio, b.item?.codigo||'', nome, b.marca, b.modelo, b.responsavel?.nome, b.local?.nome, b.situacao];
     })
   ], 'patrimonio');
@@ -714,7 +714,7 @@ window.exportarInsumos = function() {
 async function renderCustodias() {
   const { data, error } = await sb.from('custodias')
     .select(`id,quantidade,data_entrega,prazo_devolucao,ativa,
-      item:itens!item_id(nome,codigo),
+      item:itens!item_id(descricao,codigo),
       bem:bens_patrimoniais!bem_patrimonial_id(numero_patrimonio,historico_legado),
       funcionario:funcionarios!funcionario_id(nome),
       obra:obras!obra_id(nome),
@@ -740,7 +740,7 @@ async function renderCustodias() {
         <th>Item / Bem</th><th>Responsável</th><th>Qtd</th><th>Tipo Entrega</th><th>Data</th><th>Status</th>
       </tr></thead><tbody>
       ${(data||[]).map(c=>{
-        const itemNome = c.item?.nome || (c.bem?.numero_patrimonio ? 'PAT-' + c.bem.numero_patrimonio : '')
+        const itemNome = c.item?.descricao || (c.bem?.numero_patrimonio ? 'PAT-' + c.bem.numero_patrimonio : '')
           || (c.bem?.historico_legado ? c.bem.historico_legado.split('|')[0].trim() : '') || '—';
         const resp = c.funcionario?.nome || c.obra?.nome || '—';
         const tipoEntrega = c.movimentacao_entrega ? tipoMovLabel(c.movimentacao_entrega.tipo) : '—';
@@ -763,7 +763,7 @@ window.exportarCustodias = function() {
   exportCSV([
     ['Item/Bem','Responsável','Quantidade','Tipo Entrega','Data','Status'],
     ...d.map(c=>{
-      const itemNome = c.item?.nome || (c.bem?.numero_patrimonio ? 'PAT-' + c.bem.numero_patrimonio : '') || '';
+      const itemNome = c.item?.descricao || (c.bem?.numero_patrimonio ? 'PAT-' + c.bem.numero_patrimonio : '') || '';
       const resp = c.funcionario?.nome || c.obra?.nome || '';
       const tipoEntrega = c.movimentacao_entrega ? tipoMovLabel(c.movimentacao_entrega.tipo) : '';
       return [itemNome, resp, c.quantidade, tipoEntrega, c.data_entrega, c.ativa?'Ativo':'Devolvido'];
