@@ -543,6 +543,8 @@ async function renderPatrimonio() {
     <div class="page-hdr">
       <h2>🏷️ Patrimônio</h2><span class="badge-cnt badge">${(data||[]).length}</span>
       <div class="spacer"></div>
+      ${editar ? `<button class="btn btn-primary" onclick="novoPatrimonio()">+ Novo</button>` : ''}
+      ${editar ? `<button class="btn btn-secondary btn-sm" onclick="importarPlanilhaPatrimonio()">📥 Importar Planilha</button>` : ''}
       ${editar ? `<button class="btn btn-secondary btn-sm" onclick="exportarPatrimonio()">⬇ CSV</button>` : ''}
     </div>
     <div class="table-wrap">
@@ -579,6 +581,129 @@ window.exportarPatrimonio = function() {
     })
   ], 'patrimonio');
 };
+
+window.novoPatrimonio = function() {
+  abrirModal('Novo Bem Patrimonial', formPatrimonio({}), `
+    <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="salvarPatrimonio()">Salvar</button>`);
+};
+window.editarPatrimonio = function(b) {
+  abrirModal('Editar Bem Patrimonial', formPatrimonio(b), `
+    <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="salvarPatrimonio('${b.id}')">Salvar</button>`);
+};
+function formPatrimonio(b={}) {
+  return `
+    <div class="form-grid">
+      <div class="form-row"><label>Nº Patrimônio *</label><input id="pat-num" value="${b.numero_patrimonio||''}" placeholder="PAT-001"></div>
+      <div class="form-row"><label>Nº Série</label><input id="pat-serie" value="${b.numero_serie||''}"></div>
+    </div>
+    <div class="form-row"><label>Descrição / Nome do Item</label><input id="pat-desc" value="${b.historico_legado||''}" placeholder="Ex: Notebook Dell, Furadeira Bosch..."></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Marca</label><input id="pat-marca" value="${b.marca||''}"></div>
+      <div class="form-row"><label>Modelo</label><input id="pat-modelo" value="${b.modelo||''}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Situação</label>
+        <select id="pat-sit">
+          <option value="ATIVO" ${(b.situacao||'ATIVO')==='ATIVO'?'selected':''}>Ativo</option>
+          <option value="INATIVO" ${b.situacao==='INATIVO'?'selected':''}>Inativo</option>
+          <option value="MANUTENCAO" ${b.situacao==='MANUTENCAO'?'selected':''}>Manutenção</option>
+          <option value="BAIXADO" ${b.situacao==='BAIXADO'?'selected':''}>Baixado</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Conservação</label>
+        <select id="pat-cons">
+          <option value="BOM" ${(b.conservacao||'BOM')==='BOM'?'selected':''}>Bom</option>
+          <option value="REGULAR" ${b.conservacao==='REGULAR'?'selected':''}>Regular</option>
+          <option value="RUIM" ${b.conservacao==='RUIM'?'selected':''}>Ruim</option>
+        </select>
+      </div>
+    </div>`;
+}
+window.salvarPatrimonio = async function(id) {
+  const numero = document.getElementById('pat-num').value.trim();
+  if (!numero) { toast('Nº Patrimônio obrigatório','err'); return; }
+  const payload = {
+    numero_patrimonio: numero,
+    numero_serie: document.getElementById('pat-serie').value.trim()||null,
+    historico_legado: document.getElementById('pat-desc').value.trim()||null,
+    marca: document.getElementById('pat-marca').value.trim()||null,
+    modelo: document.getElementById('pat-modelo').value.trim()||null,
+    situacao: document.getElementById('pat-sit').value,
+    conservacao: document.getElementById('pat-cons').value,
+    ativo: true
+  };
+  const { error } = id ? await sb.from('bens_patrimoniais').update(payload).eq('id',id)
+                       : await sb.from('bens_patrimoniais').insert(payload);
+  if (error) { toast('Erro: '+error.message,'err'); return; }
+  toast(id?'Patrimônio atualizado!':'Patrimônio cadastrado!');
+  fecharModal(); renderPatrimonio();
+};
+
+window.importarPlanilhaPatrimonio = function() {
+  abrirModal('📥 Importar Patrimônio por Planilha', `
+    <p style="margin-bottom:12px;color:var(--muted);font-size:.85rem">
+      Faça upload de um arquivo <b>CSV</b> com as colunas:<br>
+      <code style="background:var(--bg);padding:2px 6px;border-radius:4px">numero_patrimonio, descricao, marca, modelo, numero_serie, situacao, conservacao</code>
+    </p>
+    <p style="margin-bottom:12px;font-size:.82rem;color:var(--muted)">A primeira linha deve ser o cabeçalho. Separador: vírgula ou ponto-e-vírgula.</p>
+    <div class="form-row">
+      <label>Arquivo CSV *</label>
+      <input type="file" id="imp-pat-file" accept=".csv,.txt" style="padding:6px">
+    </div>
+    <div id="imp-pat-preview" style="margin-top:12px"></div>`,
+    `<button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+     <button class="btn btn-primary" onclick="confirmarImportarPatrimonio()">Importar</button>`);
+  document.getElementById('imp-pat-file').addEventListener('change', function() {
+    const f = this.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = e => {
+      const rows = parsearCSV(e.target.result);
+      document.getElementById('imp-pat-preview').innerHTML =
+        `<p style="font-size:.82rem;color:var(--ok)">✅ ${rows.length} linha(s) encontrada(s) para importar.</p>`;
+      window._impPatRows = rows;
+    };
+    r.readAsText(f);
+  });
+};
+
+window.confirmarImportarPatrimonio = async function() {
+  const rows = window._impPatRows;
+  if (!rows || !rows.length) { toast('Selecione um arquivo CSV válido','err'); return; }
+  let ok=0, erros=0;
+  for (const row of rows) {
+    const numero = row.numero_patrimonio||row['Nº Patrimônio']||row.numero||row.patrimonio||'';
+    if (!numero) { erros++; continue; }
+    const payload = {
+      numero_patrimonio: numero,
+      historico_legado: row.descricao||row.Descricao||row.nome||row.Nome||null,
+      marca: row.marca||row.Marca||null,
+      modelo: row.modelo||row.Modelo||null,
+      numero_serie: row.numero_serie||row['Nº Série']||null,
+      situacao: (row.situacao||row.Situacao||'ATIVO').toUpperCase(),
+      conservacao: (row.conservacao||row.Conservacao||'BOM').toUpperCase(),
+      ativo: true
+    };
+    const { error } = await sb.from('bens_patrimoniais').insert(payload);
+    if (error) erros++; else ok++;
+  }
+  toast(`Importados: ${ok} | Erros: ${erros}`, erros>0?'warn':'ok');
+  fecharModal(); renderPatrimonio();
+};
+
+function parsearCSV(texto) {
+  const linhas = texto.trim().split(/\r?\n/);
+  if (linhas.length < 2) return [];
+  const sep = linhas[0].includes(';') ? ';' : ',';
+  const headers = linhas[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,''));
+  return linhas.slice(1).map(linha => {
+    const vals = linha.split(sep).map(v=>v.trim().replace(/^"|"$/g,''));
+    const obj = {};
+    headers.forEach((h,i) => obj[h] = vals[i]||'');
+    return obj;
+  }).filter(r => Object.values(r).some(v=>v));
+}
 
 // ══════════════════════════════════════════════
 // FERRAMENTAS (usa itens com tipo=FERRAMENTA)
@@ -682,10 +807,13 @@ window.exportarFerramentas = function() {
 // ══════════════════════════════════════════════
 async function renderInsumos() {
   const { data } = await sb.from('itens').select('id,codigo,descricao,unidade_id,estoque_minimo,ativo').eq('tipo','INSUMO').eq('ativo',true).order('descricao');
+  const editar = podeEditar();
   document.getElementById('main').innerHTML = `
     <div class="page-hdr">
       <h2>📦 Insumos</h2><span class="badge-cnt badge">${(data||[]).length}</span>
       <div class="spacer"></div>
+      ${editar ? `<button class="btn btn-primary" onclick="novoInsumo()">+ Novo</button>` : ''}
+      ${editar ? `<button class="btn btn-secondary btn-sm" onclick="importarPlanilhaInsumos()">📥 Importar Planilha</button>` : ''}
       <button class="btn btn-secondary btn-sm" onclick="exportarInsumos()">⬇ CSV</button>
     </div>
     <div class="table-wrap">
@@ -693,17 +821,95 @@ async function renderInsumos() {
         <div class="search-box">🔍 <input placeholder="Buscar..." oninput="filtrarTabela('tbIns',this.value,[0,1])"></div>
       </div>
       <table id="tbIns"><thead><tr>
-        <th>Código</th><th>Descrição</th><th>Estoque Mín.</th><th>Status</th>
+        <th>Código</th><th>Descrição</th><th>Estoque Mín.</th><th>Status</th>${editar?'<th></th>':''}
       </tr></thead><tbody>
       ${(data||[]).map(i=>`<tr>
           <td><b>${i.codigo||'—'}</b></td><td>${i.descricao||'—'}</td>
           <td>${fmtQtd(i.estoque_minimo)}</td>
           <td><span class="badge ${i.ativo?'badge-ok':'badge-gray'}">${i.ativo?'Ativo':'Inativo'}</span></td>
-        </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:32px">Nenhum insumo cadastrado</td></tr>'}
+          ${editar?`<td><button class="btn btn-secondary btn-sm" onclick='editarInsumo(${JSON.stringify(i).replace(/'/g,"&#39;")})'>✏️</button></td>`:''}
+        </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px">Nenhum insumo cadastrado</td></tr>'}
       </tbody></table>
     </div>`;
   window._insData = data;
 }
+
+window.novoInsumo = function() {
+  abrirModal('Novo Insumo', formInsumo({}), `
+    <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="salvarInsumo()">Salvar</button>`);
+};
+window.editarInsumo = function(i) {
+  abrirModal('Editar Insumo', formInsumo(i), `
+    <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="salvarInsumo('${i.id}')">Salvar</button>`);
+};
+function formInsumo(i={}) {
+  return `
+    <div class="form-grid">
+      <div class="form-row"><label>Código</label><input id="ins-codigo" value="${i.codigo||''}" placeholder="INS-001"></div>
+      <div class="form-row"><label>Estoque Mínimo</label><input type="number" id="ins-min" value="${i.estoque_minimo||0}" min="0"></div>
+    </div>
+    <div class="form-row"><label>Descrição *</label><input id="ins-desc" value="${i.descricao||''}" placeholder="Nome do insumo"></div>`;
+}
+window.salvarInsumo = async function(id) {
+  const descricao = document.getElementById('ins-desc').value.trim();
+  if (!descricao) { toast('Descrição obrigatória','err'); return; }
+  const payload = { descricao, tipo:'INSUMO', ativo:true,
+    codigo: document.getElementById('ins-codigo').value.trim()||null,
+    estoque_minimo: parseInt(document.getElementById('ins-min').value)||0 };
+  const { error } = id ? await sb.from('itens').update(payload).eq('id',id)
+                       : await sb.from('itens').insert(payload);
+  if (error) { toast('Erro: '+error.message,'err'); return; }
+  toast(id?'Insumo atualizado!':'Insumo cadastrado!');
+  fecharModal(); renderInsumos();
+};
+
+window.importarPlanilhaInsumos = function() {
+  abrirModal('📥 Importar Insumos por Planilha', `
+    <p style="margin-bottom:12px;color:var(--muted);font-size:.85rem">
+      Faça upload de um arquivo <b>CSV</b> com as colunas:<br>
+      <code style="background:var(--bg);padding:2px 6px;border-radius:4px">codigo, descricao, estoque_minimo</code>
+    </p>
+    <p style="margin-bottom:12px;font-size:.82rem;color:var(--muted)">A primeira linha deve ser o cabeçalho. Separador: vírgula ou ponto-e-vírgula.</p>
+    <div class="form-row">
+      <label>Arquivo CSV *</label>
+      <input type="file" id="imp-ins-file" accept=".csv,.txt" style="padding:6px">
+    </div>
+    <div id="imp-ins-preview" style="margin-top:12px"></div>`,
+    `<button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+     <button class="btn btn-primary" onclick="confirmarImportarInsumos()">Importar</button>`);
+  document.getElementById('imp-ins-file').addEventListener('change', function() {
+    const f = this.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = e => {
+      const rows = parsearCSV(e.target.result);
+      document.getElementById('imp-ins-preview').innerHTML =
+        `<p style="font-size:.82rem;color:var(--ok)">✅ ${rows.length} linha(s) encontrada(s) para importar.</p>`;
+      window._impInsRows = rows;
+    };
+    r.readAsText(f);
+  });
+};
+
+window.confirmarImportarInsumos = async function() {
+  const rows = window._impInsRows;
+  if (!rows || !rows.length) { toast('Selecione um arquivo CSV válido','err'); return; }
+  let ok=0, erros=0;
+  for (const row of rows) {
+    const payload = {
+      tipo: 'INSUMO', ativo: true,
+      codigo: row.codigo||row.Codigo||row.CODIGO||null,
+      descricao: row.descricao||row.Descricao||row.DESCRICAO||row.nome||row.Nome||'',
+      estoque_minimo: parseInt(row.estoque_minimo||row['Estoque Mínimo']||row.estoque||0)||0
+    };
+    if (!payload.descricao) { erros++; continue; }
+    const { error } = await sb.from('itens').insert(payload);
+    if (error) erros++; else ok++;
+  }
+  toast(`Importados: ${ok} | Erros: ${erros}`, erros>0?'warn':'ok');
+  fecharModal(); renderInsumos();
+};
 
 window.exportarInsumos = function() {
   const d = window._insData || [];
