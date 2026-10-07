@@ -719,6 +719,7 @@ async function renderFerramentas() {
       <h2>🔧 Ferramentas</h2><span class="badge-cnt badge">${(data||[]).length}</span>
       <div class="spacer"></div>
       ${editar ? `<button class="btn btn-primary" onclick="novaFerramenta()">+ Nova</button>` : ''}
+      ${editar ? `<button class="btn btn-secondary btn-sm" onclick="importarPlanilhaFerramentas()">📥 Importar Planilha</button>` : ''}
       <button class="btn btn-secondary btn-sm" onclick="exportarFerramentas()">⬇ CSV</button>
     </div>
     <div class="table-wrap">
@@ -800,6 +801,55 @@ window.exportarFerramentas = function() {
     ['Código','Nome','Categoria','Unidade','Estoque Mínimo','Ativo'],
     ...d.map(f=>[f.codigo,f.descricao,f.categoria,f.unidade,f.estoque_minimo,f.ativo?'Sim':'Não'])
   ], 'ferramentas');
+};
+
+window.importarPlanilhaFerramentas = function() {
+  abrirModal('📥 Importar Ferramentas por Planilha', `
+    <p style="margin-bottom:12px;color:var(--muted);font-size:.85rem">
+      Faça upload de um arquivo <b>CSV</b> com as colunas:<br>
+      <code style="background:var(--bg);padding:2px 6px;border-radius:4px">codigo, descricao, categoria, unidade, estoque_minimo</code>
+    </p>
+    <p style="margin-bottom:12px;font-size:.82rem;color:var(--muted)">A primeira linha deve ser o cabeçalho. Separador: vírgula ou ponto-e-vírgula.</p>
+    <div class="form-row">
+      <label>Arquivo CSV *</label>
+      <input type="file" id="imp-fer-file" accept=".csv,.txt" style="padding:6px">
+    </div>
+    <div id="imp-fer-preview" style="margin-top:12px"></div>`,
+    `<button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+     <button class="btn btn-primary" onclick="confirmarImportarFerramentas()">Importar</button>`);
+  document.getElementById('imp-fer-file').addEventListener('change', function() {
+    const f = this.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = e => {
+      const rows = parsearCSV(e.target.result);
+      document.getElementById('imp-fer-preview').innerHTML =
+        `<p style="font-size:.82rem;color:var(--ok)">✅ ${rows.length} linha(s) encontrada(s) para importar.</p>`;
+      window._impFerRows = rows;
+    };
+    r.readAsText(f);
+  });
+};
+
+window.confirmarImportarFerramentas = async function() {
+  const rows = window._impFerRows;
+  if (!rows || !rows.length) { toast('Selecione um arquivo CSV válido','err'); return; }
+  let ok=0, erros=0;
+  for (const row of rows) {
+    const descricao = row.descricao||row.Descricao||row.nome||row.Nome||row.DESCRICAO||'';
+    if (!descricao) { erros++; continue; }
+    const payload = {
+      tipo: 'FERRAMENTA', ativo: true,
+      codigo: row.codigo||row.Codigo||row.CODIGO||null,
+      descricao,
+      categoria: row.categoria||row.Categoria||null,
+      unidade: row.unidade||row.Unidade||'un',
+      estoque_minimo: parseInt(row.estoque_minimo||row['Estoque Mínimo']||0)||0
+    };
+    const { error } = await sb.from('itens').insert(payload);
+    if (error) erros++; else ok++;
+  }
+  toast(`Importadas: ${ok} | Erros: ${erros}`, erros>0?'warn':'ok');
+  fecharModal(); renderFerramentas();
 };
 
 // ══════════════════════════════════════════════
