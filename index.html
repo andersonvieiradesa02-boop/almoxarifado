@@ -517,7 +517,7 @@ function tipoMovLabel(tipo) {
 // ══════════════════════════════════════════════
 async function renderPatrimonio() {
   const { data, error } = await sb.from('bens_patrimoniais')
-    .select('id,numero_patrimonio,numero_serie,marca,modelo,situacao,conservacao,historico_legado,ativo,item:itens!item_id(codigo,descricao),responsavel:funcionarios!responsavel_id(nome),local:locais!local_atual_id(nome)')
+    .select('id,numero_patrimonio,numero_serie,marca,modelo,situacao,conservacao,historico_legado,ativo,item:itens!bens_patrimoniais_item_id_fkey(codigo,descricao),responsavel:funcionarios!bens_patrimoniais_responsavel_id_fkey(nome),local:locais!bens_patrimoniais_local_atual_id_fkey(nome)')
     .order('numero_patrimonio', { ascending: true });
   if (error) { document.getElementById('main').innerHTML = `<p style="color:red">Erro: ${error.message}</p>`; return; }
 
@@ -702,11 +702,10 @@ window.exportarInsumos = function() {
 async function renderCustodias() {
   const { data, error } = await sb.from('custodias')
     .select(`id,quantidade,data_entrega,prazo_devolucao,ativa,
-      item:itens!item_id(descricao,codigo),
-      bem:bens_patrimoniais!bem_patrimonial_id(numero_patrimonio,historico_legado),
-      funcionario:funcionarios!funcionario_id(nome),
-      obra:obras!obra_id(nome),
-      movimentacao_entrega:movimentacoes!movimentacao_entrega_id(tipo)`)
+      item:itens!custodias_item_id_fkey(descricao,codigo),
+      bem:bens_patrimoniais!custodias_bem_patrimonial_id_fkey(numero_patrimonio,historico_legado),
+      funcionario:funcionarios!custodias_funcionario_id_fkey(nome),
+      obra:obras!custodias_obra_id_fkey(nome)`)
     .order('data_entrega', { ascending: false });
 
   if (error) {
