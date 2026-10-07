@@ -673,7 +673,7 @@ async function renderDashboard() {
   const baixoEstoque = (insEstoque || []).filter(i => i.estoque_minimo > 0 && i.qtd_atual <= i.estoque_minimo);
 
   document.getElementById('main').innerHTML = `
-    <div class="page-hdr"><h2>🏢 Terra Sol Engenharia</h2><span class="badge-cnt badge">${new Date().toLocaleDateString('pt-BR')}</span></div>
+    <div class="page-hdr"><h2>🏢 Almoxarifado — Terra Sol Engenharia</h2><span class="badge-cnt badge">${new Date().toLocaleDateString('pt-BR')}</span></div>
     <div class="stats-grid">
       <div class="stat-card"><div class="label">Patrimônios</div><div class="value">${fmtQtd(cPat)}</div><div class="sub">bens ativos</div></div>
       <div class="stat-card"><div class="label">Ferramentas</div><div class="value">${fmtQtd(cFer)}</div><div class="sub">tipos cadastrados</div></div>
