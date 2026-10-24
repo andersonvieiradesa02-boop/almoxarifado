@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Almoxarifado — Terra Sol Engenharia</title>
+<title>Almoxarifado — Projeto de Estoque</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -438,7 +438,7 @@ async function comSessao(fn) { return fn(); }
 let currentUser = null;
 let currentPerfil = null;
 let currentPage = 'dashboard';
-let configEmpresa = { nome: 'Terra Sol Engenharia', cnpj: '', endereco: '', cidade: '', telefone: '', email: '', texto_rodape: '' };
+let configEmpresa = { nome: 'Projeto de Estoque', cnpj: '', endereco: '', cidade: '', telefone: '', email: '', texto_rodape: '' };
 
 // ══════════════════════════════════════════════
 // AUTH (login direto via tabela usuarios)
@@ -718,7 +718,7 @@ async function renderDashboard() {
     <div class="page-hdr" style="align-items:center;gap:14px">
       <div>
         <h2 style="font-size:1.25rem;line-height:1.2;letter-spacing:-.02em">Almoxarifado</h2>
-        <span style="font-size:.75rem;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase">Terra Sol Engenharia</span>
+        <span style="font-size:.75rem;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase">Projeto de Estoque</span>
       </div>
       <span class="badge-cnt badge" style="margin-left:4px">${new Date().toLocaleDateString('pt-BR')}</span>
     </div>
@@ -1954,7 +1954,7 @@ async function renderConfiguracoes() {
 
 window.salvarConfig = async function() {
   const payload = {
-    nome: document.getElementById('cfg-nome').value.trim() || 'Terra Sol Engenharia',
+    nome: document.getElementById('cfg-nome').value.trim() || 'Projeto de Estoque',
     cnpj: document.getElementById('cfg-cnpj').value.trim() || null,
     endereco: document.getElementById('cfg-end').value.trim() || null,
     cidade: document.getElementById('cfg-cidade').value.trim() || null,
