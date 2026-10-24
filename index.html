@@ -406,7 +406,31 @@ tbody tr:hover td{background:rgba(45,106,79,.04)}
 // ══════════════════════════════════════════════
 const SUPA_URL = 'https://xmlfpwzfqmsrbisjqgpo.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtbGZwd3pmcW1zcmJpc2pxZ3BvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3MTE3MjQsImV4cCI6MjEwNjI4NzcyNH0.g3E2tfuGH-E8TQPHB77CRzjTiySk0K3utqv0a3wNTZA';
-const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ══════════════════════════════════════════════
+// CLIENTE SUPABASE COM SESSION TOKEN
+// O token de sessão é enviado como header em todas
+// as requisições — as policies RLS verificam esse header
+// ══════════════════════════════════════════════
+let _sessionToken = null;
+
+function criarClienteSupabase(token) {
+  const headers = token ? { 'x-session-token': token } : {};
+  return supabase.createClient(SUPA_URL, SUPA_KEY, {
+    global: { headers }
+  });
+}
+
+let sb = criarClienteSupabase(null);
+
+function atualizarToken(token) {
+  _sessionToken = token;
+  sb = criarClienteSupabase(token);
+}
+
+// Compatibilidade: stub para código legado que chamava setarContextoSessao
+async function setarContextoSessao(user) { /* não é mais necessário */ }
+async function comSessao(fn) { return fn(); }
 
 // ══════════════════════════════════════════════
 // ESTADO GLOBAL
@@ -421,13 +445,16 @@ let configEmpresa = { nome: 'Terra Sol Engenharia', cnpj: '', endereco: '', cida
 // ══════════════════════════════════════════════
 
 // Verificar sessão salva no sessionStorage
-(function initSession() {
+(async function initSession() {
   const saved = sessionStorage.getItem('ts_user');
-  if (saved) {
+  const token = sessionStorage.getItem('ts_session_token');
+  if (saved && token) {
     try {
       const u = JSON.parse(saved);
       currentUser = u;
       currentPerfil = u.perfil;
+      // Reinicializar cliente Supabase com o token de sessão no header
+      atualizarToken(token);
       mostrarApp();
       aplicarUsuarioUI(u);
       carregarConfig();
@@ -486,6 +513,11 @@ async function fazerLogin() {
     currentUser = data;
     currentPerfil = data.perfil;
     sessionStorage.setItem('ts_user', JSON.stringify(data));
+    // Salvar token e reinicializar cliente com header x-session-token
+    if (data.session_token) {
+      sessionStorage.setItem('ts_session_token', data.session_token);
+      atualizarToken(data.session_token);
+    }
     aplicarUsuarioUI(data);
     try { await carregarConfig(); } catch(e) {}
     mostrarApp();
@@ -497,9 +529,19 @@ async function fazerLogin() {
 }
 
 async function fazerLogout() {
+  // Invalidar sessão no banco
+  const token = sessionStorage.getItem('ts_session_token');
+  if (token) {
+    try {
+      await sb.from('sessoes_ativas').delete().eq('token', token);
+    } catch(e) { /* silencioso */ }
+  }
   sessionStorage.removeItem('ts_user');
+  sessionStorage.removeItem('ts_session_token');
   currentUser = null;
   currentPerfil = null;
+  // Resetar cliente sem token
+  atualizarToken(null);
   mostrarLogin();
 }
 
